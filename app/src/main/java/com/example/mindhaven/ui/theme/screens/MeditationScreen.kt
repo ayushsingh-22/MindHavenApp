@@ -100,7 +100,6 @@ fun MeditationScreen(viewModel: MeditationViewModel) {
                     .weight(1f),
                 contentAlignment = Alignment.Center
             ) {
-
             }
         }
 
