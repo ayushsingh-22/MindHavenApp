@@ -170,7 +170,6 @@ class SleepViewModel(application: Application) : AndroidViewModel(application) {
         stop()
         cancelTimer()
 
-        // Unbind from service when ViewModel is cleared
         mediaServiceConnection?.let {
             getApplication<Application>().unbindService(it)
         }

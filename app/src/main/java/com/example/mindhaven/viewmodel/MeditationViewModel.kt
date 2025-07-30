@@ -27,7 +27,7 @@ class MeditationViewModel(application: Application) : AndroidViewModel(applicati
     private var mediaService: MusicService? = null
     private var activeTimerJob: Job? = null
 
-    var selectedTimer by mutableLongStateOf(15L * 60 * 1000) // Default to 15 minutes
+    var selectedTimer by mutableLongStateOf(15L * 60 * 1000)
 
     var isPlaying by mutableStateOf(false)
         private set
@@ -112,17 +112,15 @@ class MeditationViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     fun play(timerDuration: Long = selectedTimer) {
-        stop() // Stop any previous playback and timer
+        stop()
 
         selectedSound?.let { sound ->
-            // Always start with looping enabled for consistent experience
             val isLooping = true
 
             mediaService?.playSound(sound.soundResId, sound.title, isLooping)
             isPlaying = true
             showLottieAnimation = true
 
-            // Set timer only if not infinite (not 0)
             if (timerDuration > 0) {
                 startTimer(timerDuration)
             }
@@ -132,7 +130,6 @@ class MeditationViewModel(application: Application) : AndroidViewModel(applicati
     fun pause() {
         mediaService?.pauseSound()
         isPlaying = false
-        // Don't cancel the timer when pausing - just pause the sound
     }
 
     fun stop() {
@@ -143,13 +140,10 @@ class MeditationViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     private fun startTimer(duration: Long) {
-        // Cancel any existing timer
         cancelTimer()
 
-        // Use coroutine for timer instead of handler
         activeTimerJob = viewModelScope.launch {
             delay(duration)
-            // Check if we're still playing the same sound
             stop()
         }
     }
@@ -170,7 +164,6 @@ class MeditationViewModel(application: Application) : AndroidViewModel(applicati
         stop()
         cancelTimer()
 
-        // Unbind from service when ViewModel is cleared
         mediaServiceConnection?.let {
             getApplication<Application>().unbindService(it)
         }

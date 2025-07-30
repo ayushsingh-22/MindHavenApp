@@ -67,7 +67,7 @@ class NotificationHelper(
                     callback: PlayerNotificationManager.BitmapCallback
                 ): Bitmap? = null
             })
-            .setSmallIconResourceId(R.drawable.farm)
+            .setSmallIconResourceId(R.drawable.logo)
             .setChannelNameResourceId(R.string.app_name)
             .setChannelDescriptionResourceId(R.string.app_name)
             .build()

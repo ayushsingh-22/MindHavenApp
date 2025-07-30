@@ -38,16 +38,13 @@ fun sleepScreen(viewModel: SleepViewModel) {
 
     BackHandler {
         if (selectedSound != null) {
-            // If in player view, go back to list
             viewModel.stop()
             viewModel.clearSelection()
         } else {
-            // If in list view, show exit confirmation
             showExitDialog = true
         }
     }
 
-    // Exit confirmation dialog
     if (showExitDialog) {
         AlertDialog(
             onDismissRequest = { showExitDialog = false },
@@ -101,7 +98,6 @@ fun sleepScreen(viewModel: SleepViewModel) {
                     .weight(1f),
                 contentAlignment = Alignment.Center
             ) {
-                // Player view content
             }
         }
 
