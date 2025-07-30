@@ -132,5 +132,6 @@ Have feedback or suggestions? Feel free to [open an issue](https://github.com/ay
 
 ---
 
-> *“Peace comes from within. Do not seek it without.” — Buddha*
+> *“Peace comes from within. Do not seek it without.” — **Buddha***
+> 
 > *Happy relaxing and meditating with **MindHaven**!* 🧘
