@@ -30,6 +30,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavHostController
 import com.example.mindhaven.ui.theme.*
 import com.example.mindhaven.viewmodel.MeditationViewModel
+import com.example.mindhaven.viewmodel.SleepViewModel
 
 @androidx.annotation.OptIn(UnstableApi::class)
 @OptIn(ExperimentalMaterial3Api::class)

@@ -26,6 +26,7 @@ import com.example.mindhaven.R
 import com.example.mindhaven.ui.theme.components.LottieAnimationView
 import com.example.mindhaven.ui.theme.components.MusicPlayer
 import com.example.mindhaven.ui.theme.components.SoundCard
+import com.example.mindhaven.viewmodel.SleepViewModel
 
 @androidx.annotation.OptIn(UnstableApi::class)
 @Composable

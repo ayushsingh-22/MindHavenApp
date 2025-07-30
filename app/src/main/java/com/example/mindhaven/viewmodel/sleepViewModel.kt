@@ -21,7 +21,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @UnstableApi
-class MeditationViewModel(application: Application) : AndroidViewModel(application) {
+class SleepViewModel(application: Application) : AndroidViewModel(application) {
 
     private var mediaServiceConnection: ServiceConnection? = null
     private var mediaService: MusicService? = null
@@ -38,7 +38,7 @@ class MeditationViewModel(application: Application) : AndroidViewModel(applicati
     var showLottieAnimation by mutableStateOf(false)
         private set
 
-    val meditationSounds = listOf(
+    val sleepSounds = listOf(
         SoundItem(
             id = 1,
             title = "Calming Rain",
