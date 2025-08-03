@@ -1,6 +1,5 @@
 package com.example.mindhaven.ui.theme.components
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -13,11 +12,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.mindhaven.model.SoundItem
 import com.example.mindhaven.ui.theme.*
-import com.example.mindhaven.ui.theme.Typography
+import coil.compose.AsyncImage
 
 
 @Composable
@@ -45,8 +43,8 @@ fun MusicPlayer(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Image(
-                    painter = painterResource(id = sound.thumbnailResId),
+                AsyncImage(
+                    model = sound.imageUrl,
                     contentDescription = sound.title,
                     modifier = Modifier
                         .size(56.dp)

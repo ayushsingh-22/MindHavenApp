@@ -65,11 +65,11 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
 
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.2")
-    implementation("androidx.navigation:navigation-compose:2.9.2")
+    implementation("androidx.navigation:navigation-compose:2.9.3")
     implementation("androidx.activity:activity-compose:1.8.2")
-    implementation("androidx.media3:media3-exoplayer:1.7.1")
-    implementation("androidx.media3:media3-ui:1.7.1")
-    implementation("androidx.media3:media3-session:1.7.1")
+    implementation("androidx.media3:media3-exoplayer:1.8.0")
+    implementation("androidx.media3:media3-ui:1.8.0")
+    implementation("androidx.media3:media3-session:1.8.0")
     implementation("androidx.core:core-ktx:1.13.0")
 
     implementation("com.airbnb.android:lottie-compose:6.6.7")
@@ -80,6 +80,8 @@ dependencies {
     kapt("com.google.dagger:hilt-android-compiler:2.50")
 
     implementation("androidx.media:media:1.7.0")
+    implementation("io.appwrite:sdk-for-android:8.2.1")
 
+    implementation("io.coil-kt:coil-compose:2.7.0")
 
 }

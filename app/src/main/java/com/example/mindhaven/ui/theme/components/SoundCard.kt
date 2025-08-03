@@ -1,6 +1,5 @@
 package com.example.mindhaven.ui.theme.components
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,7 +9,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -21,12 +21,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.example.mindhaven.model.SoundItem
 import com.example.mindhaven.ui.theme.*
-import com.example.mindhaven.ui.theme.Typography
 
 @Composable
 fun SoundCard(
@@ -52,14 +51,14 @@ fun SoundCard(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Image(
-                painter = painterResource(id = soundItem.thumbnailResId),
+
+            AsyncImage(
+                model = soundItem.imageUrl,
                 contentDescription = soundItem.title,
                 modifier = Modifier
                     .size(56.dp)
-                    .clip(RoundedCornerShape(10.dp))
+                    .clip(RoundedCornerShape(12.dp))
             )
-
             Spacer(modifier = Modifier.width(16.dp))
 
             Text(
@@ -83,5 +82,3 @@ fun SoundCard(
         }
     }
 }
-
-

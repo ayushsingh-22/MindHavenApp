@@ -13,7 +13,6 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.util.UnstableApi
-import com.example.mindhaven.R
 import com.example.mindhaven.model.SoundItem
 import com.example.mindhaven.service.MusicService
 import kotlinx.coroutines.Job
@@ -38,44 +37,40 @@ class MeditationViewModel(application: Application) : AndroidViewModel(applicati
     var showLottieAnimation by mutableStateOf(false)
         private set
 
-    val meditationSounds = listOf(
-        SoundItem(
-            id = 1,
-            title = "Calming Rain",
-            thumbnailResId = R.drawable.rain,
-            soundResId = R.raw.calming_rain,
-        ),
-        SoundItem(
-            id = 2,
-            title = "Bird Chripping",
-            thumbnailResId = R.drawable.forest_birds,
-            soundResId = R.raw.bird_chrip,
-        ),
-        SoundItem(
-            id = 3,
-            title = "Meditation Bell",
-            thumbnailResId = R.drawable.meditation_bell,
-            soundResId = R.raw.meditation_bell,
-        ),
-        SoundItem(
-            id = 4,
-            title = "Tibet Bowl",
-            thumbnailResId = R.drawable.tibet_bowl,
-            soundResId = R.raw.tibet_bowl,
-        ),
-        SoundItem(
-            id = 5,
-            title = "River Flow",
-            thumbnailResId = R.drawable.river_flow,
-            soundResId = R.raw.river_flow,
-        ),
-        SoundItem(
-            id = 6,
-            title = "Wind",
-            thumbnailResId = R.drawable.wind,
-            soundResId = R.raw.wind_tree,
-        )
-    )
+     val meditationSounds = listOf(
+           SoundItem(
+               id = 1,
+               title = "Bird Chirping",
+               imageUrl = "https://syd.cloud.appwrite.io/v1/storage/buckets/688e78db003b3cca2de2/files/688f6004003d86aea9d1/view?project=688e73ad002a00fce059&mode=admin",
+               audioUrl = "https://syd.cloud.appwrite.io/v1/storage/buckets/688e78db003b3cca2de2/files/688f5d0700007afbdece/view?project=688e73ad002a00fce059&mode=admin"
+           ),
+           SoundItem(
+               id = 2,
+               title = "River Sounds",
+               imageUrl = "https://syd.cloud.appwrite.io/v1/storage/buckets/688e78db003b3cca2de2/files/688f603c0023b548e5f2/view?project=688e73ad002a00fce059&mode=admin",
+               audioUrl = "https://syd.cloud.appwrite.io/v1/storage/buckets/688e78db003b3cca2de2/files/688f5ddd0004ba9ad2dc/view?project=688e73ad002a00fce059&mode=admin"
+           ),
+           SoundItem(
+               id = 3,
+               title = "Meditation Bell",
+               imageUrl = "https://syd.cloud.appwrite.io/v1/storage/buckets/688e78db003b3cca2de2/files/688fd283002713e0a8dc/view?project=688e73ad002a00fce059&mode=admin",
+               audioUrl = "https://syd.cloud.appwrite.io/v1/storage/buckets/688e78db003b3cca2de2/files/688f5d1d000bb4901c31/view?project=688e73ad002a00fce059&mode=adminn"
+           ),
+         SoundItem(
+             id = 4,
+             title = "Tibet Bowl",
+             imageUrl = "https://syd.cloud.appwrite.io/v1/storage/buckets/688e78db003b3cca2de2/files/688f601200079a609a32/view?project=688e73ad002a00fce059&mode=admi",
+             audioUrl = "https://syd.cloud.appwrite.io/v1/storage/buckets/688e78db003b3cca2de2/files/688f5dfe0019ed01cef0/view?project=688e73ad002a00fce059&mode=admin"
+         ),
+         SoundItem(
+             id = 5,
+             title = "Wind Ambience",
+             imageUrl = "https://syd.cloud.appwrite.io/v1/storage/buckets/688e78db003b3cca2de2/files/688f5fe700073bccc8a0/view?project=688e73ad002a00fce059&mode=admin",
+             audioUrl = "https://syd.cloud.appwrite.io/v1/storage/buckets/688e78db003b3cca2de2/files/688f5dc200145854e754/view?project=688e73ad002a00fce059&mode=admin"
+         ),
+
+
+       )
 
     init {
         connectToMediaService()
@@ -117,7 +112,7 @@ class MeditationViewModel(application: Application) : AndroidViewModel(applicati
         selectedSound?.let { sound ->
             val isLooping = true
 
-            mediaService?.playSound(sound.soundResId, sound.title, isLooping)
+            mediaService?.playSound(sound, isLooping)
             isPlaying = true
             showLottieAnimation = true
 

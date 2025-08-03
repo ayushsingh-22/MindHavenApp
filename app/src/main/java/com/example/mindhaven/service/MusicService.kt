@@ -14,6 +14,8 @@ import androidx.media3.session.MediaSessionService
 import com.example.mindhaven.MainActivity
 import androidx.media3.common.Player
 import android.util.Log
+import com.example.mindhaven.model.SoundItem
+
 @UnstableApi
 class MusicService : MediaSessionService() {
 
@@ -79,6 +81,7 @@ class MusicService : MediaSessionService() {
         super.onDestroy()
     }
 
+    @Deprecated("Deprecated in Kotlin")
     override fun onUpdateNotification(session: MediaSession) {
         if (player.isPlaying) {
             startForeground(NOTIFICATION_ID, null)
@@ -87,17 +90,16 @@ class MusicService : MediaSessionService() {
         }
     }
 
-fun playSound(resourceId: Int, title: String, isLooping: Boolean) {
+fun playSound(soundItem: SoundItem, isLooping: Boolean) {
     try {
-        val mediaItem = MediaItem.fromUri("android.resource://$packageName/$resourceId")
+        val mediaItem = MediaItem.fromUri(soundItem.audioUrl)
         player.apply {
             setMediaItem(mediaItem)
-            // Ensure the repeat mode is properly set based on isLooping
             repeatMode = if (isLooping) Player.REPEAT_MODE_ALL else Player.REPEAT_MODE_OFF
             prepare()
             play()
         }
-        notificationHelper.updateMetadata(title, "Playing")
+        notificationHelper.updateMetadata(soundItem.title, "Playing")
     } catch (e: Exception) {
         Log.e("MusicService", "Error playing sound", e)
     }

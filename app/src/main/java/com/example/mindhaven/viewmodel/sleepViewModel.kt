@@ -27,7 +27,7 @@ class SleepViewModel(application: Application) : AndroidViewModel(application) {
     private var mediaService: MusicService? = null
     private var activeTimerJob: Job? = null
 
-    var selectedTimer by mutableLongStateOf(15L * 60 * 1000) // Default to 15 minutes
+    var selectedTimer by mutableLongStateOf(15L * 60 * 1000)
 
     var isPlaying by mutableStateOf(false)
         private set
@@ -41,40 +41,34 @@ class SleepViewModel(application: Application) : AndroidViewModel(application) {
     val sleepSounds = listOf(
         SoundItem(
             id = 1,
-            title = "Calming Rain",
-            thumbnailResId = R.drawable.rain,
-            soundResId = R.raw.calming_rain,
+            title = "Bird Chirping",
+            imageUrl = "https://syd.cloud.appwrite.io/v1/storage/buckets/688e78db003b3cca2de2/files/688f6004003d86aea9d1/view?project=688e73ad002a00fce059&mode=admin",
+            audioUrl = "https://syd.cloud.appwrite.io/v1/storage/buckets/688e78db003b3cca2de2/files/688f5d0700007afbdece/view?project=688e73ad002a00fce059&mode=admin"
         ),
         SoundItem(
             id = 2,
-            title = "Bird Chripping",
-            thumbnailResId = R.drawable.forest_birds,
-            soundResId = R.raw.bird_chrip,
+            title = "River Sounds",
+            imageUrl = "https://syd.cloud.appwrite.io/v1/storage/buckets/688e78db003b3cca2de2/files/688f603c0023b548e5f2/view?project=688e73ad002a00fce059&mode=admin",
+            audioUrl = "https://syd.cloud.appwrite.io/v1/storage/buckets/688e78db003b3cca2de2/files/688f5ddd0004ba9ad2dc/view?project=688e73ad002a00fce059&mode=admin"
         ),
         SoundItem(
             id = 3,
             title = "Meditation Bell",
-            thumbnailResId = R.drawable.meditation_bell,
-            soundResId = R.raw.meditation_bell,
+            imageUrl = "https://syd.cloud.appwrite.io/v1/storage/buckets/688e78db003b3cca2de2/files/688fd283002713e0a8dc/view?project=688e73ad002a00fce059&mode=admin",
+            audioUrl = "https://syd.cloud.appwrite.io/v1/storage/buckets/688e78db003b3cca2de2/files/688f5d1d000bb4901c31/view?project=688e73ad002a00fce059&mode=adminn"
         ),
         SoundItem(
             id = 4,
             title = "Tibet Bowl",
-            thumbnailResId = R.drawable.tibet_bowl,
-            soundResId = R.raw.tibet_bowl,
+            imageUrl = "https://syd.cloud.appwrite.io/v1/storage/buckets/688e78db003b3cca2de2/files/688f601200079a609a32/view?project=688e73ad002a00fce059&mode=admi",
+            audioUrl = "https://syd.cloud.appwrite.io/v1/storage/buckets/688e78db003b3cca2de2/files/688f5dfe0019ed01cef0/view?project=688e73ad002a00fce059&mode=admin"
         ),
         SoundItem(
             id = 5,
-            title = "River Flow",
-            thumbnailResId = R.drawable.river_flow,
-            soundResId = R.raw.river_flow,
+            title = "Wind Ambience",
+            imageUrl = "https://syd.cloud.appwrite.io/v1/storage/buckets/688e78db003b3cca2de2/files/688f5fe700073bccc8a0/view?project=688e73ad002a00fce059&mode=admin",
+            audioUrl = "https://syd.cloud.appwrite.io/v1/storage/buckets/688e78db003b3cca2de2/files/688f5dc200145854e754/view?project=688e73ad002a00fce059&mode=admin"
         ),
-        SoundItem(
-            id = 6,
-            title = "Wind",
-            thumbnailResId = R.drawable.wind,
-            soundResId = R.raw.wind_tree,
-        )
     )
 
     init {
@@ -118,11 +112,10 @@ class SleepViewModel(application: Application) : AndroidViewModel(application) {
             // Always start with looping enabled for consistent experience
             val isLooping = true
 
-            mediaService?.playSound(sound.soundResId, sound.title, isLooping)
+       mediaService?.playSound(sound, isLooping)
             isPlaying = true
             showLottieAnimation = true
 
-            // Set timer only if not infinite (not 0)
             if (timerDuration > 0) {
                 startTimer(timerDuration)
             }

@@ -41,11 +41,9 @@ fun MeditationScreen(viewModel: MeditationViewModel) {
 
     BackHandler {
         if (selectedSound != null) {
-            // If in player view, go back to list
             viewModel.stop()
             viewModel.clearSelection()
         } else {
-            // If in list view, show exit confirmation
             showExitDialog = true
         }
     }

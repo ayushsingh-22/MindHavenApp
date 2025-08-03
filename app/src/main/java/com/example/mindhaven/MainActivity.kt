@@ -20,7 +20,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Request notification permission for Android 13+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(
                     this,
@@ -36,12 +35,12 @@ class MainActivity : ComponentActivity() {
         }
 
         enableEdgeToEdge()
-        setContent {
+                setContent {
             MindHavenTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     navigation(
-                        navController = rememberNavController(),
-//                        modifier = Modifier.padding(innerPadding)
+                        navController = rememberNavController()
+                        // modifier = Modifier.padding(innerPadding)
                     )
                 }
             }
