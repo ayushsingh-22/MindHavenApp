@@ -1,7 +1,5 @@
 package com.example.mindhaven.ui.theme.screens.userRegistration
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -15,7 +13,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -23,75 +20,14 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.mindhaven.R
 import com.example.mindhaven.ui.theme.*
-import com.example.mindhaven.utils.GoogleSignInHelper
-import com.example.mindhaven.viewmodel.AuthViewModel
-import kotlinx.coroutines.launch
 
 @Composable
-fun EmailLogin(
-    navController: NavController,
-    authViewModel: AuthViewModel = hiltViewModel()
-) {
+fun EmailLogin(navController: NavController) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val snackbarHostState = remember { SnackbarHostState() }
-    
-    val uiState by authViewModel.uiState.collectAsState()
-
-    // Google Sign-In launcher
-    val googleSignInLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        val data = result.data
-        val googleSignInHelper = GoogleSignInHelper(context)
-        googleSignInHelper.handleSignInResult(data) { signInResult ->
-            signInResult.fold(
-                onSuccess = { idToken ->
-                    authViewModel.signInWithGoogleIdToken(idToken)
-                },
-                onFailure = { exception ->
-                    scope.launch {
-                        snackbarHostState.showSnackbar(
-                            message = "Google Sign-In failed: ${exception.message}",
-                            duration = SnackbarDuration.Long
-                        )
-                    }
-                }
-            )
-        }
-    }
-
-    // Observe auth events
-    LaunchedEffect(Unit) {
-        authViewModel.uiEvent.collect { event ->
-            when (event) {
-                is AuthViewModel.AuthUiEvent.NavigateToHome -> {
-                    navController.navigate("home") {
-                        popUpTo("emailLogin") { inclusive = true }
-                    }
-                }
-                is AuthViewModel.AuthUiEvent.ShowError -> {
-                    snackbarHostState.showSnackbar(
-                        message = event.message,
-                        duration = SnackbarDuration.Long
-                    )
-                }
-                is AuthViewModel.AuthUiEvent.ShowSuccess -> {
-                    snackbarHostState.showSnackbar(
-                        message = event.message,
-                        duration = SnackbarDuration.Long
-                    )
-                }
-                else -> {}
-            }
-        }
-    }
 
     // Background gradient
     Box(
@@ -147,8 +83,7 @@ fun EmailLogin(
                         focusedBorderColor = MediumPurple,
                         focusedLabelColor = MediumPurple
                     ),
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !uiState.isLoading
+                    modifier = Modifier.fillMaxWidth()
                 )
 
                 Spacer(modifier = Modifier.height(15.dp))
@@ -166,40 +101,23 @@ fun EmailLogin(
                         focusedLabelColor = MediumPurple
                     ),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !uiState.isLoading
+                    modifier = Modifier.fillMaxWidth()
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))
 
                 // Login button
                 Button(
-                    onClick = {
-                        if (email.isNotBlank() && password.isNotBlank()) {
-                            authViewModel.signInWithEmail(email, password)
-                        } else {
-                            scope.launch {
-                                snackbarHostState.showSnackbar("Please fill in all fields")
-                            }
-                        }
-                    },
+                    onClick = { /* Handle email login */ },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MediumPurple
-                    ),
-                    enabled = !uiState.isLoading
+                    )
                 ) {
-                    if (uiState.isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            color = Color.White
-                        )
-                    } else {
-                        Text("Login", fontSize = 18.sp, color = Color.White)
-                    }
+                    Text("Login", fontSize = 18.sp, color = Color.White)
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
@@ -209,15 +127,7 @@ fun EmailLogin(
                     text = "Forgot Password?",
                     fontSize = 14.sp,
                     color = Heliotrope,
-                    modifier = Modifier.clickable {
-                        if (email.isNotBlank()) {
-                            authViewModel.resetPassword(email)
-                        } else {
-                            scope.launch {
-                                snackbarHostState.showSnackbar("Please enter your email first")
-                            }
-                        }
-                    }
+                    modifier = Modifier.clickable { /* Forgot password */ }
                 )
 
                 Spacer(modifier = Modifier.height(15.dp))
@@ -261,25 +171,13 @@ fun EmailLogin(
 
                 // Google login button
                 Button(
-                    onClick = {
-                        val googleSignInHelper = GoogleSignInHelper(context)
-                        val signInClient = googleSignInHelper.initializeGoogleSignIn()
-                        val signInIntent = googleSignInHelper.getSignInIntent()
-                        
-                        if (signInIntent != null) {
-                            googleSignInLauncher.launch(signInIntent)
-                        } else {
-                            // Fallback to OAuth flow
-                            authViewModel.signInWithGoogle()
-                        }
-                    },
+                    onClick = { /* Handle Google login */ },
                     colors = ButtonDefaults.buttonColors(containerColor = Color.White),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp),
-                    elevation = ButtonDefaults.buttonElevation(5.dp),
-                    enabled = !uiState.isLoading
+                    elevation = ButtonDefaults.buttonElevation(5.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Image(
@@ -299,11 +197,5 @@ fun EmailLogin(
                 }
             }
         }
-        
-        // Snackbar host
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier.align(Alignment.BottomCenter)
-        )
     }
 }
