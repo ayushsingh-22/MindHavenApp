@@ -1,5 +1,10 @@
 package com.example.mindhaven.ui.theme.screens.userRegistration
 
+import android.app.Activity
+import android.content.Intent
+import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -13,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -22,14 +28,101 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.mindhaven.R
+import com.example.mindhaven.service.SupabaseManager
 import com.example.mindhaven.ui.theme.*
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.providers.builtin.IDToken
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 fun EmailLogin(navController: NavController) {
+    val context = LocalContext.current
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
-    // Background gradient
+    // State to track Google login result
+    var googleLoginResult by remember { mutableStateOf<Result<Boolean>?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Google Sign-In launcher
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+            try {
+                val account = task.result
+                val idToken = account.idToken
+
+                if (idToken != null) {
+                    CoroutineScope(Dispatchers.IO).launch {
+                        try {
+                            val authResult = SupabaseManager.client.auth.signInWith(provider = IDToken) {
+                                this.idToken = idToken
+                            }
+                            Log.d("EmailLogin", "Supabase signInWith result: $authResult")
+                            // Check if session is established
+                            if (SupabaseManager.client.auth.currentSessionOrNull() != null) {
+                                withContext(Dispatchers.Main) {
+                                    googleLoginResult = Result.success(true)
+                                }
+                            } else {
+                                withContext(Dispatchers.Main) {
+                                    googleLoginResult = Result.failure(Exception("Supabase session not established."))
+                                }
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                            withContext(Dispatchers.Main) {
+                                googleLoginResult = Result.failure(e)
+                            }
+                        }
+                    }
+                } else {
+                    googleLoginResult = Result.failure(Exception("No ID token"))
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                googleLoginResult = Result.failure(e)
+            }
+        }
+    }
+
+    // React to login result
+    LaunchedEffect(googleLoginResult) {
+        googleLoginResult?.let { result ->
+            if (result.isSuccess) {
+                snackbarHostState.showSnackbar("Google login Sucessful!")
+                print("Abhinav Yha pe aaya ha ai")
+
+                navController.navigate("welcome")
+            } else {
+                print("Ayush Yha pe aaya ha ai")
+
+                snackbarHostState.showSnackbar("Google login failed: ${result.exceptionOrNull()?.localizedMessage}")
+            }
+            // Reset result after handling
+            googleLoginResult = null
+        }
+    }
+
+    fun startGoogleSignIn() {
+        print("Ayush Yha pe aaya ha ai")
+
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken("576522713268-7uadji6icjjrl112odskn5mhoe0s1050.apps.googleusercontent.com")
+            .requestEmail()
+            .build()
+        val googleSignInClient = GoogleSignIn.getClient(context, gso)
+        launcher.launch(googleSignInClient.signInIntent)
+    }
+
+    // UI
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -40,6 +133,9 @@ fun EmailLogin(navController: NavController) {
             ),
         contentAlignment = Alignment.Center
     ) {
+        // Show snackbar
+        SnackbarHost(hostState = snackbarHostState)
+
         Card(
             modifier = Modifier
                 .padding(20.dp)
@@ -53,7 +149,6 @@ fun EmailLogin(navController: NavController) {
                     .padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // App title
                 Text(
                     text = "MindHaven",
                     fontFamily = loraText,
@@ -72,7 +167,6 @@ fun EmailLogin(navController: NavController) {
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Email input
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
@@ -88,7 +182,6 @@ fun EmailLogin(navController: NavController) {
 
                 Spacer(modifier = Modifier.height(15.dp))
 
-                // Password input
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it },
@@ -106,9 +199,11 @@ fun EmailLogin(navController: NavController) {
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Login button
                 Button(
-                    onClick = { /* Handle email login */ },
+                    onClick = { /* Handle email login */
+
+                        navController.navigate("welcome")
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp),
@@ -122,7 +217,6 @@ fun EmailLogin(navController: NavController) {
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Forgot Password
                 Text(
                     text = "Forgot Password?",
                     fontSize = 14.sp,
@@ -132,7 +226,6 @@ fun EmailLogin(navController: NavController) {
 
                 Spacer(modifier = Modifier.height(15.dp))
 
-                // Sign Up link
                 Text(
                     text = "Don't have an account? Sign Up",
                     fontSize = 14.sp,
@@ -168,9 +261,8 @@ fun EmailLogin(navController: NavController) {
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Google login button
                 Button(
-                    onClick = { /* Handle Google login */ },
+                    onClick = { startGoogleSignIn() },
                     colors = ButtonDefaults.buttonColors(containerColor = Color.White),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier

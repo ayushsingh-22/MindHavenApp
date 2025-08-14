@@ -51,7 +51,7 @@ fun registrationScreen(navController: NavController) {
             Spacer(modifier = Modifier.height(10.dp))
 
             LottieAnimationView(
-                animationResId = R.raw.man,
+                animationResId = R.raw.yoga,
                 alignment = Alignment.Center
             )
 
