@@ -43,5 +43,6 @@ val loraText = FontFamily(
     Font(R.font.lora_medium, FontWeight.Medium),
     Font(R.font.lora_mediumitalic, FontWeight.Medium, style = FontStyle.Italic),
     Font(R.font.lora_semibold, FontWeight.SemiBold),
-    Font(R.font.lora_semibolditalic, FontWeight.SemiBold, style = FontStyle.Italic)
+    Font(R.font.lora_semibolditalic, FontWeight.SemiBold, style = FontStyle.Italic),
+
 )
