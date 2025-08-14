@@ -1,7 +1,5 @@
 package com.example.mindhaven.ui.theme.screens.userRegistration
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -9,13 +7,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -27,45 +23,21 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.mindhaven.R
 import com.example.mindhaven.ui.theme.*
-import com.example.mindhaven.utils.GoogleSignInHelper
 import com.example.mindhaven.viewmodel.AuthViewModel
 import kotlinx.coroutines.launch
 
 @Composable
-fun EmailLogin(
+fun SignUpScreen(
     navController: NavController,
     authViewModel: AuthViewModel = hiltViewModel()
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    val context = LocalContext.current
+    var confirmPassword by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     
     val uiState by authViewModel.uiState.collectAsState()
-
-    // Google Sign-In launcher
-    val googleSignInLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        val data = result.data
-        val googleSignInHelper = GoogleSignInHelper(context)
-        googleSignInHelper.handleSignInResult(data) { signInResult ->
-            signInResult.fold(
-                onSuccess = { idToken ->
-                    authViewModel.signInWithGoogleIdToken(idToken)
-                },
-                onFailure = { exception ->
-                    scope.launch {
-                        snackbarHostState.showSnackbar(
-                            message = "Google Sign-In failed: ${exception.message}",
-                            duration = SnackbarDuration.Long
-                        )
-                    }
-                }
-            )
-        }
-    }
 
     // Observe auth events
     LaunchedEffect(Unit) {
@@ -73,7 +45,7 @@ fun EmailLogin(
             when (event) {
                 is AuthViewModel.AuthUiEvent.NavigateToHome -> {
                     navController.navigate("home") {
-                        popUpTo("emailLogin") { inclusive = true }
+                        popUpTo("signup") { inclusive = true }
                     }
                 }
                 is AuthViewModel.AuthUiEvent.ShowError -> {
@@ -129,7 +101,7 @@ fun EmailLogin(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Text(
-                    text = "Sign in to continue",
+                    text = "Create your account",
                     fontSize = 18.sp,
                     color = TwilightLavender
                 )
@@ -170,16 +142,48 @@ fun EmailLogin(
                     enabled = !uiState.isLoading
                 )
 
+                Spacer(modifier = Modifier.height(15.dp))
+
+                // Confirm Password input
+                OutlinedTextField(
+                    value = confirmPassword,
+                    onValueChange = { confirmPassword = it },
+                    label = { Text("Confirm Password") },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MediumPurple,
+                        focusedLabelColor = MediumPurple
+                    ),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !uiState.isLoading
+                )
+
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Login button
+                // Sign Up button
                 Button(
                     onClick = {
-                        if (email.isNotBlank() && password.isNotBlank()) {
-                            authViewModel.signInWithEmail(email, password)
-                        } else {
-                            scope.launch {
-                                snackbarHostState.showSnackbar("Please fill in all fields")
+                        when {
+                            email.isBlank() || password.isBlank() || confirmPassword.isBlank() -> {
+                                scope.launch {
+                                    snackbarHostState.showSnackbar("Please fill in all fields")
+                                }
+                            }
+                            password != confirmPassword -> {
+                                scope.launch {
+                                    snackbarHostState.showSnackbar("Passwords do not match")
+                                }
+                            }
+                            password.length < 6 -> {
+                                scope.launch {
+                                    snackbarHostState.showSnackbar("Password must be at least 6 characters")
+                                }
+                            }
+                            else -> {
+                                authViewModel.signUpWithEmail(email, password)
                             }
                         }
                     },
@@ -198,105 +202,22 @@ fun EmailLogin(
                             color = Color.White
                         )
                     } else {
-                        Text("Login", fontSize = 18.sp, color = Color.White)
+                        Text("Sign Up", fontSize = 18.sp, color = Color.White)
                     }
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Forgot Password
-                Text(
-                    text = "Forgot Password?",
-                    fontSize = 14.sp,
-                    color = Heliotrope,
-                    modifier = Modifier.clickable {
-                        if (email.isNotBlank()) {
-                            authViewModel.resetPassword(email)
-                        } else {
-                            scope.launch {
-                                snackbarHostState.showSnackbar("Please enter your email first")
-                            }
-                        }
-                    }
-                )
-
                 Spacer(modifier = Modifier.height(15.dp))
 
-                // Sign Up link
+                // Sign In link
                 Text(
-                    text = "Don't have an account? Sign Up",
+                    text = "Already have an account? Sign In",
                     fontSize = 14.sp,
                     color = TwilightLavender,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.clickable {
-                        navController.navigate("signup")
+                        navController.navigate("emailLogin")
                     }
                 )
-
-                Spacer(modifier = Modifier.height(25.dp))
-
-                // Divider with OR
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    HorizontalDivider(
-                        modifier = Modifier.weight(1f),
-                        thickness = DividerDefaults.Thickness,
-                        color = LavenderBlue
-                    )
-                    Text(
-                        "  OR  ",
-                        color = TwilightLavender,
-                        fontWeight = FontWeight.Medium
-                    )
-                    HorizontalDivider(
-                        modifier = Modifier.weight(1f),
-                        thickness = DividerDefaults.Thickness,
-                        color = LavenderBlue
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                // Google login button
-                Button(
-                    onClick = {
-                        val googleSignInHelper = GoogleSignInHelper(context)
-                        val signInClient = googleSignInHelper.initializeGoogleSignIn()
-                        val signInIntent = googleSignInHelper.getSignInIntent()
-                        
-                        if (signInIntent != null) {
-                            googleSignInLauncher.launch(signInIntent)
-                        } else {
-                            // Fallback to OAuth flow
-                            authViewModel.signInWithGoogle()
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.White),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp),
-                    elevation = ButtonDefaults.buttonElevation(5.dp),
-                    enabled = !uiState.isLoading
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Image(
-                            painter = painterResource(id = R.drawable.google),
-                            contentDescription = "Google Logo",
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            "Continue with Google",
-                            fontFamily = loraText,
-                            color = Color.Black,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                }
             }
         }
         

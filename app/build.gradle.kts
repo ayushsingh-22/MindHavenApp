@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
     id("org.jetbrains.kotlin.kapt")
     id("com.google.dagger.hilt.android")
 }
@@ -58,6 +59,12 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.foundation)
     implementation(libs.play.services.auth)
+    
+    // Supabase dependencies
+    implementation(platform(libs.supabase.bom))
+    implementation(libs.supabase.auth)
+    implementation(libs.ktor.client.android)
+    
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -82,7 +89,6 @@ dependencies {
     kapt("com.google.dagger:hilt-android-compiler:2.50")
 
     implementation("androidx.media:media:1.7.0")
-    implementation("io.appwrite:sdk-for-android:8.2.1")
 
     implementation("io.coil-kt:coil-compose:2.7.0")
 }
