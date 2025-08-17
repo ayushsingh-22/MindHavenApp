@@ -29,7 +29,6 @@ fun rememberGoogleSignInLauncher(
             Toast.makeText(context, "Sign-in cancelled", Toast.LENGTH_SHORT).show()
             return@rememberLauncherForActivityResult
         }
-
         val data = result.data
         if (data == null) {
             Toast.makeText(context, "No sign-in data returned", Toast.LENGTH_SHORT).show()
