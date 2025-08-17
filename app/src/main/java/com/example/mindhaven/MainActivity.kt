@@ -13,14 +13,13 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.navigation.compose.rememberNavController
 import com.example.mindhaven.ui.theme.MindHavenTheme
-import com.example.mindhaven.ui.theme.navigation.navigation
+import com.example.mindhaven.ui.theme.navigation.AppNavigation
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-
-
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(
@@ -43,13 +42,11 @@ class MainActivity : ComponentActivity() {
 
                 Scaffold(
                     modifier = Modifier.fillMaxSize()
-                ) { innerPadding ->
-                    navigation(
-                        navController = navController,
+                ) { _ ->
 
-                    )
+                    AppNavigation(navController = navController)
                 }
             }
         }
-        }
     }
+}
