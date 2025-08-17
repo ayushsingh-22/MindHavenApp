@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.mindhaven.R
-import com.example.mindhaven.model.rememberGoogleSignInLauncher
+import com.example.mindhaven.ui.theme.components.rememberGoogleSignInLauncher
 import com.example.mindhaven.ui.theme.*
 import com.example.mindhaven.viewmodel.AuthViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn

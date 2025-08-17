@@ -9,11 +9,10 @@
     <option name="autoReloadType" value="NONE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e2abfc2b-2648-4ee2-9e76-6b25fc01c80a" name="Changes" comment="implement email login and sign-up screens, integrate Google Sign-In, and update navigation">
-      <change afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/src/main/java/com/example/mindhaven/model/GoogleSignInLauncher.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/src/main/java/com/example/mindhaven/ui/theme/screens/userRegistration/emailLogin.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/src/main/java/com/example/mindhaven/ui/theme/screens/userRegistration/signUp.kt" afterDir="false" />
+    <list default="true" id="e2abfc2b-2648-4ee2-9e76-6b25fc01c80a" name="Changes" comment="add Google Sign-In integration, enhance user registration flow, and implement profile screen">
+      <change afterPath="$PROJECT_DIR$/app/src/main/java/com/example/mindhaven/ui/theme/components/GoogleSignInLauncher.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/src/main/java/com/example/mindhaven/ui/theme/screens/profileScreen.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/src/main/res/raw/meditating_man.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/8.13/checksums/checksums.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/8.13/checksums/checksums.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/8.13/checksums/md5-checksums.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/8.13/checksums/md5-checksums.bin" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/8.13/checksums/sha1-checksums.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/8.13/checksums/sha1-checksums.bin" afterDir="false" />
@@ -23,15 +22,15 @@
       <change beforePath="$PROJECT_DIR$/.gradle/8.13/fileHashes/fileHashes.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/8.13/fileHashes/fileHashes.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/8.13/fileHashes/resourceHashesCache.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/8.13/fileHashes/resourceHashesCache.bin" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/app/build.gradle.kts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/mindhaven/model/GoogleSignInLauncher.kt" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/mindhaven/ui/theme/navigation/Navigation.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/mindhaven/ui/theme/navigation/Navigation.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/mindhaven/ui/theme/screens/mainScreen.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/mindhaven/ui/theme/screens/mainScreen.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/mindhaven/ui/theme/screens/userRegistration/emailLogin.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/mindhaven/ui/theme/screens/userRegistration/emailLogin.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/mindhaven/ui/theme/screens/userRegistration/registerationScreen.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/mindhaven/ui/theme/screens/userRegistration/registerationScreen.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/mindhaven/ui/theme/screens/userRegistration/signUp.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/mindhaven/ui/theme/screens/userRegistration/signUp.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/mindhaven/ui/theme/screens/welcomeScreen.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/mindhaven/ui/theme/screens/welcomeScreen.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/res/values/strings.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/values/strings.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/build.gradle.kts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/build/reports/problems/problems-report.html" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/gradle/libs.versions.toml" beforeDir="false" afterPath="$PROJECT_DIR$/gradle/libs.versions.toml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -74,6 +73,12 @@
     </option>
   </component>
   <component name="Git.Settings">
+    <option name="PUSH_TAGS">
+      <GitPushTagMode>
+        <option name="argument" value="--tags" />
+        <option name="title" value="All" />
+      </GitPushTagMode>
+    </option>
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
         <entry key="$PROJECT_DIR$" value="email" />
@@ -95,9 +100,11 @@
 }</component>
   <component name="HighlightingSettingsPerFile">
     <setting file="jar://$USER_HOME$/.gradle/caches/8.13/transforms/b7734e753e1d068ca4336e46fe7ef2ea/transformed/animation-release/jars/classes.jar!/androidx/compose/animation/AnimatedContentKt.class" root0="SKIP_INSPECTION" />
-    <setting file="file://$PROJECT_DIR$/app/src/main/java/com/example/mindhaven/model/GoogleSignInLauncher.kt" root0="SKIP_INSPECTION" />
     <setting file="file://$PROJECT_DIR$/app/src/main/java/com/example/mindhaven/ui/theme/screens/userRegistration/emailLogin.kt" root0="SKIP_INSPECTION" />
     <setting file="file://$PROJECT_DIR$/app/src/main/java/com/example/mindhaven/ui/theme/screens/userRegistration/registerationScreen.kt" root0="SKIP_INSPECTION" />
+  </component>
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="CurrentFile" />
   </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 0
@@ -133,8 +140,16 @@
   </component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="D:\Android\MindHavenApp\app\src\main\res\raw" />
+      <recent name="D:\Android\MindHavenApp\app\src\main\res\drawable" />
       <recent name="D:\Android\MindHavenApp\app" />
       <recent name="D:\Android\MindHavenApp\app\src" />
+    </key>
+    <key name="K2MoveDeclarationsDialog.RECENT_PACKAGE_KEY">
+      <recent name="com.example.mindhaven.ui.theme.screens" />
+      <recent name="com.example.mindhaven.ui.theme.screens.userRegistration" />
+      <recent name="com.example.mindhaven.ui.theme.components" />
+      <recent name="com.example.mindhaven.model" />
     </key>
   </component>
   <component name="RunManager">
@@ -227,7 +242,23 @@
       <option name="project" value="LOCAL" />
       <updated>1755429433510</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="implement email login and sign-up screens, integrate Google Sign-In, and update navigation">
+      <option name="closed" value="true" />
+      <created>1755456533004</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1755456533004</updated>
+    </task>
+    <task id="LOCAL-00003" summary="implement email login and sign-up screens, integrate Google Sign-In, and update navigation">
+      <option name="closed" value="true" />
+      <created>1755456592467</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1755456592467</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -244,7 +275,8 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="feat: integrate Hilt for dependency injection, add Firebase authentication, and update navigation structure" />
     <MESSAGE value="implement email login and sign-up screens, integrate Google Sign-In, and update navigation" />
-    <option name="LAST_COMMIT_MESSAGE" value="implement email login and sign-up screens, integrate Google Sign-In, and update navigation" />
+    <MESSAGE value="add Google Sign-In integration, enhance user registration flow, and implement profile screen" />
+    <option name="LAST_COMMIT_MESSAGE" value="add Google Sign-In integration, enhance user registration flow, and implement profile screen" />
   </component>
   <component name="play_dynamic_filters_status">
     <option name="appIdToCheckInfo">

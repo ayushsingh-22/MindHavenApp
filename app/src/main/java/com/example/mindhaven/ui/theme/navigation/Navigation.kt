@@ -1,6 +1,7 @@
 package com.example.mindhaven.ui.theme.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -8,18 +9,20 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.mindhaven.ui.theme.screens.mainScreen
+import com.example.mindhaven.ui.theme.screens.profileScreen
 import com.example.mindhaven.ui.theme.screens.userRegistration.emailLogin
-import com.example.mindhaven.ui.theme.screens.userRegistration.RegistrationScreen
+import com.example.mindhaven.ui.theme.screens.userRegistration.registrationScreen
 import com.example.mindhaven.ui.theme.screens.userRegistration.SignUp
 import com.example.mindhaven.ui.theme.screens.welcomeScreen
 import com.example.mindhaven.viewmodel.AuthViewModel
 
 sealed class Screen(val route: String) {
-    object Registration : Screen("registration")
+    object registration : Screen("registration")
     object emailLogin : Screen("emailLogin")
-    object Welcome : Screen("welcome")
-    object Main : Screen("main")
+    object welcome : Screen("welcome")
+    object main : Screen("main")
     object signUp : Screen("signUp")
+    object profile : Screen("profile")
 }
 
 @Composable
@@ -29,15 +32,30 @@ fun AppNavigation(
 ) {
     val user by authViewModel.authState.observeAsState()
 
+    // React to auth state changes
+    LaunchedEffect(user) {
+        if (user != null) {
+            // User is logged in → navigate to Main Screen
+            navController.navigate(Screen.main.route) {
+                popUpTo(0) // Clear backstack
+            }
+        } else {
+            // User is logged out → navigate to Welcome Screen
+            navController.navigate(Screen.welcome.route) {
+                popUpTo(0) // Clear backstack
+            }
+        }
+    }
+
     NavHost(
         navController = navController,
-        startDestination = Screen.Welcome.route
+        startDestination = if (user != null) Screen.main.route else Screen.welcome.route
     ) {
-        composable(Screen.Registration.route) {
-            RegistrationScreen(
+        composable(Screen.registration.route) {
+            registrationScreen(
                 navController = navController,
                 authViewModel = authViewModel,
-                onSuccessRoute = Screen.Main.route
+                onSuccessRoute = Screen.main.route
             )
         }
 
@@ -45,7 +63,7 @@ fun AppNavigation(
             emailLogin(
                 navController = navController,
                 authViewModel = authViewModel,
-                onSuccessRoute = Screen.Main.route
+                onSuccessRoute = Screen.main.route
             )
         }
 
@@ -53,18 +71,22 @@ fun AppNavigation(
             SignUp(
                 navController = navController,
                 authViewModel = authViewModel,
-                onSuccessRoute = Screen.Main.route
+                onSuccessRoute = Screen.main.route
             )
         }
 
-        composable(Screen.Welcome.route) {
-            welcomeScreen(
+        composable(Screen.welcome.route) {
+            welcomeScreen(navController = navController)
+        }
+
+        composable(Screen.profile.route) {
+            profileScreen(
                 navController = navController,
                 authViewModel = authViewModel
             )
         }
 
-        composable(Screen.Main.route) {
+        composable(Screen.main.route) {
             mainScreen(navController)
         }
     }

@@ -1,100 +1,122 @@
 package com.example.mindhaven.ui.theme.screens
 
 import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Text
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
-import com.airbnb.lottie.compose.LottieAnimation
-import com.airbnb.lottie.compose.LottieCompositionSpec
-import com.airbnb.lottie.compose.LottieConstants
-import com.airbnb.lottie.compose.animateLottieCompositionAsState
-import com.airbnb.lottie.compose.rememberLottieComposition
+import com.airbnb.lottie.compose.*
 import com.example.mindhaven.R
-import com.example.mindhaven.ui.theme.Orchid
-import com.example.mindhaven.ui.theme.Periwinkle
+import com.example.mindhaven.ui.theme.*
 import com.example.mindhaven.viewmodel.AuthViewModel
 
 @Composable
-fun welcomeScreen(navController: NavHostController, authViewModel: AuthViewModel) {
-    val context = LocalContext.current
-    val user by authViewModel.authState.observeAsState()
+fun welcomeScreen(navController: NavHostController) {
+//    val context = LocalContext.current
+//    val user by authViewModel.authState.observeAsState()
 
-    Card(
-        modifier = Modifier.fillMaxSize(),
-        colors = CardDefaults.cardColors(containerColor = Periwinkle)
+    // Background gradient
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(LavenderBlush, PaleLavender, LavenderBlue)
+                )
+            ),
+        contentAlignment = Alignment.Center
     ) {
         Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
+            // App title
+            Text(
+                text = "MindHaven",
+                style = TextStyle(
+                    fontSize = 42.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MediumPurple
+                )
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
             MeditationLottieAnimation()
 
-            if (user == null) {
-                // User is not authenticated
-                Button(
-                    onClick = { navController.navigate("registration") },
-                    modifier = Modifier
-                        .offset(y = (-50).dp)
-                        .size(width = 220.dp, height = 52.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Orchid)
-                ) {
-                    Text(
-                        text = "Begin Your Journey",
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.White
-                    )
-                }
-            } else {
-                // User is authenticated
-                Button(
-                    onClick = { navController.navigate("main") },
-                    modifier = Modifier
-                        .offset(y = (-50).dp)
-                        .size(width = 220.dp, height = 52.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Orchid)
-                ) {
-                    Text(
-                        text = "Continue to App",
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.White
-                    )
-                }
+            Spacer(modifier = Modifier.height(20.dp))
 
-                Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = "Find your peace of mind",
+                style = TextStyle(
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = TwilightLavender
+                )
+            )
 
-                Button(
-                    onClick = {
-                        authViewModel.logout()
-                        Toast.makeText(context, "You logged out successfully", Toast.LENGTH_SHORT).show()
-                    },
-                    modifier = Modifier.size(width = 220.dp, height = 52.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red.copy(alpha = 0.7f))
+            Spacer(modifier = Modifier.height(36.dp))
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                shape = RoundedCornerShape(24.dp),
+                elevation = CardDefaults.cardElevation(8.dp),
+                colors = CardDefaults.cardColors(containerColor = Lavender.copy(alpha = 0.6f))
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
-                        text = "Logout",
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.White
-                    )
+                    Button(
+                        onClick = { navController.navigate("registration") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(55.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Orchid)
+                    ) {
+                        Text(
+                            text = "Begin Your Journey",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 18.sp,
+                            color = Color.White
+                        )
+                    }
                 }
             }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Text(
+                text = "Safe, Simple & Secure",
+                fontSize = 14.sp,
+                color = Plum,
+                fontWeight = FontWeight.Medium
+            )
         }
     }
 }
-
 
 @Composable
 fun MeditationLottieAnimation() {
@@ -108,7 +130,7 @@ fun MeditationLottieAnimation() {
         composition = composition,
         progress = { progress },
         modifier = Modifier
-            .size(800.dp)
+            .size(250.dp)
             .rotate(-2f)
     )
 }

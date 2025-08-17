@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.mindhaven.R
-import com.example.mindhaven.model.rememberGoogleSignInLauncher
+import com.example.mindhaven.ui.theme.components.rememberGoogleSignInLauncher
 import com.example.mindhaven.ui.theme.*
 import com.example.mindhaven.viewmodel.AuthViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
@@ -40,7 +40,6 @@ fun emailLogin(
     var password by remember { mutableStateOf("") }
     val error by authViewModel.error.observeAsState()
     val user by authViewModel.authState.observeAsState()
-
     var passwordVisible by remember { mutableStateOf(false) }
 
 
@@ -52,13 +51,6 @@ fun emailLogin(
         navController = navController,
         onSuccessRoute = onSuccessRoute
     )
-
-    // Google Sign-In Client
-    val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-        .requestIdToken(context.getString(R.string.default_web_client_id))
-        .requestEmail()
-        .build()
-    val googleSignInClient = GoogleSignIn.getClient(context, gso)
 
     // Navigate when user is already authenticated
     LaunchedEffect(user) {
@@ -142,6 +134,7 @@ fun emailLogin(
                             tint = Color.Black
                         )
                     }
+
                 }
             )
 
@@ -176,7 +169,7 @@ fun emailLogin(
 
             // Google emailLogin Button
             Button(
-                onClick = { launcher.launch(googleSignInClient.signInIntent) },
+                onClick = { launcher.launch(authViewModel.getGoogleSignInIntent(context)) },
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White),
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier
