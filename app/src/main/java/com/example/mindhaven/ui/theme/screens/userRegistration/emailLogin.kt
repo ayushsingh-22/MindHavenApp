@@ -39,7 +39,7 @@ fun emailLogin(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     val error by authViewModel.error.observeAsState()
-    val user by authViewModel.authState.observeAsState()
+    val loading by authViewModel.loading.observeAsState(false)
     var passwordVisible by remember { mutableStateOf(false) }
 
 
@@ -52,14 +52,7 @@ fun emailLogin(
         onSuccessRoute = onSuccessRoute
     )
 
-    // Navigate when user is already authenticated
-    LaunchedEffect(user) {
-        if (user != null) {
-            navController.navigate(onSuccessRoute) {
-                popUpTo(0) { inclusive = true }
-            }
-        }
-    }
+    // Navigation after a successful sign-in is driven by AuthViewModel.authGate in AppNavigation (single source of truth).
 
     Box(
         modifier = Modifier
@@ -151,6 +144,7 @@ fun emailLogin(
             // emailLogin Button
             Button(
                 onClick = { authViewModel.login(email, password) },
+                enabled = !loading,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(55.dp),
@@ -158,7 +152,7 @@ fun emailLogin(
                 colors = ButtonDefaults.buttonColors(containerColor = MediumPurple)
             ) {
                 Text(
-                    "Login",
+                    if (loading) "Signing in…" else "Login",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = Color.White
@@ -170,6 +164,7 @@ fun emailLogin(
             // Google emailLogin Button
             Button(
                 onClick = { launcher.launch(authViewModel.getGoogleSignInIntent(context)) },
+                enabled = !loading,
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White),
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier
@@ -206,7 +201,7 @@ fun emailLogin(
                     color = MediumPurple,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.clickable {
-                        navController.navigate("SignUp")
+                        navController.navigate("signUp") // route is "signUp" (Screen.signUp); "SignUp" crashed
                     }
                 )
             }

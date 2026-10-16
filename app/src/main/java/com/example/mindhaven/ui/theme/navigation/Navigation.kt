@@ -8,6 +8,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import com.example.mindhaven.data.auth.AuthGate
+import com.example.mindhaven.ui.theme.screens.ConnectionScreen
+import com.example.mindhaven.ui.theme.screens.LaunchScreen
 import com.example.mindhaven.ui.theme.screens.mainScreen
 import com.example.mindhaven.ui.theme.screens.profileScreen
 import com.example.mindhaven.ui.theme.screens.userRegistration.emailLogin
@@ -23,6 +27,10 @@ sealed class Screen(val route: String) {
     object main : Screen("main")
     object signUp : Screen("signUp")
     object profile : Screen("profile")
+    /** Verifying a restored/retried Firebase session with the backend. */
+    object launch : Screen(LAUNCH_ROUTE)
+    /** Firebase signed in, backend unreachable: Retry / Sign out. */
+    object connection : Screen(CONNECTION_ROUTE)
 }
 
 @Composable
@@ -30,27 +38,38 @@ fun AppNavigation(
     navController: NavHostController,
     authViewModel: AuthViewModel = hiltViewModel()
 ) {
-    val user by authViewModel.authState.observeAsState()
+    // ONE source of truth: the authentication gate (Firebase + backend). Screens never navigate on auth themselves.
+    val gate by authViewModel.authGate.observeAsState(authViewModel.authGate.value ?: AuthGate.SignedOut)
+    val backStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = backStackEntry?.destination?.route
 
-    // React to auth state changes
-    LaunchedEffect(user) {
-        if (user != null) {
-            // User is logged in → navigate to Main Screen
-            navController.navigate(Screen.main.route) {
-                popUpTo(0) // Clear backstack
-            }
-        } else {
-            // User is logged out → navigate to Welcome Screen
-            navController.navigate(Screen.welcome.route) {
-                popUpTo(0) // Clear backstack
-            }
+    // Keyed on (gate, current route): re-runs only when one of them changes, and authNavigationCommand returns null
+    // once the destination matches, so duplicate emissions / recompositions never navigate twice.
+    LaunchedEffect(gate, currentRoute) {
+        val command = authNavigationCommand(gate, currentRoute) ?: return@LaunchedEffect
+        navController.navigate(command.route) {
+            if (command.clearBackStack) popUpTo(navController.graph.id) { inclusive = true }
+            launchSingleTop = true
         }
     }
 
+    // Fixed start destination: the graph is never rebuilt when the auth state changes.
     NavHost(
         navController = navController,
-        startDestination = if (user != null) Screen.main.route else Screen.welcome.route
+        startDestination = Screen.launch.route
     ) {
+        composable(Screen.launch.route) {
+            LaunchScreen()
+        }
+
+        composable(Screen.connection.route) {
+            ConnectionScreen(
+                gate = gate,
+                onRetry = { authViewModel.retryBackend() },
+                onSignOut = { authViewModel.logout() }
+            )
+        }
+
         composable(Screen.registration.route) {
             registrationScreen(
                 navController = navController,

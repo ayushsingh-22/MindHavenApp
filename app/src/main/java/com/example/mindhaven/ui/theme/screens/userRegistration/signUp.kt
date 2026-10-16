@@ -42,7 +42,7 @@ fun SignUp(
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     val error by authViewModel.error.observeAsState()
-    val user by authViewModel.authState.observeAsState()
+    val loading by authViewModel.loading.observeAsState(false)
 
     var passwordVisible by remember { mutableStateOf(false) }
 
@@ -55,21 +55,7 @@ fun SignUp(
         onSuccessRoute = onSuccessRoute
     )
 
-    // Google Sign-In Client
-    val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-        .requestIdToken(context.getString(R.string.default_web_client_id))
-        .requestEmail()
-        .build()
-    val googleSignInClient = GoogleSignIn.getClient(context, gso)
-
-    // Navigate when user is authenticated
-    LaunchedEffect(user) {
-        if (user != null) {
-            navController.navigate(onSuccessRoute) {
-                popUpTo(0) { inclusive = true }
-            }
-        }
-    }
+    // Navigation after a successful sign-in is driven by AuthViewModel.authGate in AppNavigation (single source of truth).
 
     Box(
         modifier = Modifier
@@ -201,7 +187,7 @@ fun SignUp(
                 colors = ButtonDefaults.buttonColors(containerColor = MediumPurple)
             ) {
                 Text(
-                    "Sign Up",
+                    if (loading) "Please wait…" else "Sign Up",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = Color.White
@@ -212,7 +198,7 @@ fun SignUp(
 
             // Google Sign Up Button
             Button(
-                onClick = { launcher.launch(googleSignInClient.signInIntent) },
+                onClick = { launcher.launch(authViewModel.getGoogleSignInIntent(context)) },
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White),
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier

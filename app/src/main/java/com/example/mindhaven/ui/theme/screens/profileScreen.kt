@@ -33,6 +33,8 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.airbnb.lottie.compose.*
 import com.example.mindhaven.R
+import com.example.mindhaven.data.auth.BackendStatus
+import com.example.mindhaven.data.auth.TemporaryReason
 import com.example.mindhaven.ui.theme.*
 import com.example.mindhaven.viewmodel.AuthViewModel
 import kotlinx.coroutines.launch
@@ -44,6 +46,7 @@ import java.time.format.DateTimeFormatter
 fun profileScreen(navController: NavHostController, authViewModel: AuthViewModel) {
     val context = LocalContext.current
     val user by authViewModel.authState.observeAsState()
+    val backendStatus by authViewModel.backendStatus.observeAsState()
     val scrollState = rememberScrollState()
     val coroutineScope = rememberCoroutineScope()
 
@@ -137,6 +140,12 @@ fun profileScreen(navController: NavHostController, authViewModel: AuthViewModel
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Firebase is signed in, but the MantraAI backend is temporarily unreachable: the user stays signed in and can retry.
+            (backendStatus as? BackendStatus.Unavailable)?.let { unavailable ->
+                BackendStatusBanner(status = unavailable, onRetry = { authViewModel.retryBackend() })
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
             // Enhanced profile picture with level indicator
             ProfilePictureWithLevel(
                 level = meditationStreak / 7 + 1,
@@ -175,11 +184,8 @@ fun profileScreen(navController: NavHostController, authViewModel: AuthViewModel
                     Toast.makeText(context, "Sleep mode activated!", Toast.LENGTH_SHORT).show()
                 },
                 onLogout = {
-                    authViewModel.logout()
+                    authViewModel.logout() // AppNavigation then shows Welcome with a cleared back stack
                     Toast.makeText(context, "Logged out successfully", Toast.LENGTH_SHORT).show()
-                    navController.navigate("welcome") {
-                        popUpTo(0)
-                    }
                 }
             )
 
@@ -227,6 +233,32 @@ fun profileScreen(navController: NavHostController, authViewModel: AuthViewModel
                 sleepGoal = sleepGoalHours,
                 onDismiss = { showStatsDetail = false }
             )
+        }
+    }
+}
+
+@Composable
+fun BackendStatusBanner(status: BackendStatus.Unavailable, onRetry: () -> Unit) {
+    val text = when (status.reason) {
+        TemporaryReason.Offline -> "You appear to be offline. Account sync is paused."
+        TemporaryReason.Timeout -> "Your account service is taking a while to wake up."
+        TemporaryReason.RateLimited -> "Too many requests. Please wait a moment and retry."
+        TemporaryReason.ServiceUnavailable -> "Account sync is temporarily unavailable."
+        TemporaryReason.NotConfigured -> "Account sync isn't set up in this build."
+    }
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = LightLavender)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(text = text, modifier = Modifier.weight(1f), fontSize = 13.sp, color = TwilightLavender)
+            if (status.reason != TemporaryReason.NotConfigured) {
+                TextButton(onClick = onRetry) { Text("Retry", color = MediumPurple, fontWeight = FontWeight.SemiBold) }
+            }
         }
     }
 }

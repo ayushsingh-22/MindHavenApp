@@ -2,9 +2,35 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
     id("org.jetbrains.kotlin.kapt")
     id("com.google.dagger.hilt.android")
     id("com.google.gms.google-services")
+}
+
+// ---- Backend base URL (Phase 2B.4) -------------------------------------------------------------
+// Debug builds talk to a DEVELOPMENT backend only. Default: the local Express server seen from the
+// Android emulator (10.0.2.2 = the host machine; the backend listens on PORT 8080 locally).
+// Override with  -PmindhavenDevApiUrl=https://<dev-host>  (e.g. in ~/.gradle/gradle.properties).
+// Release builds have NO default: set -PmindhavenReleaseApiUrl=https://<host> explicitly; with no value the app
+// reports "backend not configured" and makes no network calls. Both must stay off the production Render service
+// until the production migration + backend are deployed and approved.
+val productionHostMarkers = listOf("emotionsense-ai-3vxa.onrender.com")
+fun cleanUrl(raw: String?): String = raw.orEmpty().trim().trimEnd('/')
+fun assertNotProduction(name: String, url: String) {
+    if (productionHostMarkers.any { url.contains(it, ignoreCase = true) } && project.findProperty("mindhavenAllowProdBackend") != "true") {
+        throw GradleException("$name points at the PRODUCTION backend. Not allowed until production is migrated and approved.")
+    }
+}
+val debugApiUrl = cleanUrl(project.findProperty("mindhavenDevApiUrl") as String?).ifEmpty { "http://10.0.2.2:8080" }
+val releaseApiUrl = cleanUrl(project.findProperty("mindhavenReleaseApiUrl") as String?)
+assertNotProduction("mindhavenDevApiUrl (debug)", debugApiUrl)
+if (releaseApiUrl.isNotEmpty()) {
+    assertNotProduction("mindhavenReleaseApiUrl", releaseApiUrl)
+    if (!releaseApiUrl.startsWith("https://")) throw GradleException("mindhavenReleaseApiUrl must be https:// (release builds never allow cleartext HTTP).")
+}
+if (!debugApiUrl.startsWith("https://") && !Regex("""^http://(10\.0\.2\.2|localhost|127\.0\.0\.1)(:\d+)?$""").matches(debugApiUrl)) {
+    throw GradleException("mindhavenDevApiUrl: cleartext http:// is only allowed for the emulator/localhost (10.0.2.2, localhost, 127.0.0.1).")
 }
 
 android {
@@ -23,10 +49,20 @@ android {
 
     kapt {
         correctErrorTypes = false
+        arguments {
+            // Hilt's Gradle plugin rewrites the superclass of @AndroidEntryPoint classes in bytecode; the annotation
+            // processor must therefore not demand that the source already extends the generated Hilt_* base class.
+            // (Hilt 2.59 with AGP 9 + kapt does not pass this itself.)
+            arg("dagger.hilt.android.internal.disableAndroidSuperclassValidation", "true")
+        }
     }
 
     buildTypes {
+        debug {
+            buildConfigField("String", "API_BASE_URL", "\"$debugApiUrl\"")
+        }
         release {
+            buildConfigField("String", "API_BASE_URL", "\"$releaseApiUrl\"")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -43,6 +79,10 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
+    }
+    testOptions {
+        unitTests.isReturnDefaultValues = true
     }
 
 }
@@ -63,8 +103,10 @@ dependencies {
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.googleid)
-    implementation(libs.firebase.database)
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.okhttp.mockwebserver)
+    testImplementation("androidx.arch.core:core-testing:2.2.0") // InstantTaskExecutorRule: LiveData in JVM tests
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
@@ -84,8 +126,8 @@ dependencies {
 
     implementation("androidx.compose.material:material-icons-extended:1.7.8")
 
-    implementation("com.google.dagger:hilt-android:2.50")
-    kapt("com.google.dagger:hilt-android-compiler:2.50")
+    implementation("com.google.dagger:hilt-android:${libs.versions.hilt.get()}")
+    kapt("com.google.dagger:hilt-android-compiler:${libs.versions.hilt.get()}")
 
     implementation("androidx.media:media:1.7.0")
 
@@ -96,6 +138,12 @@ dependencies {
     implementation("com.google.firebase:firebase-auth")
 
     implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
+
+    // Backend networking (Phase 2B.4): one small HTTP client + typed JSON; coroutines for Firebase Tasks.
+    implementation(libs.okhttp)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.coroutines.play.services)
 
 
 }

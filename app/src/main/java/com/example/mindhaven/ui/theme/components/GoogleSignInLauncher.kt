@@ -49,18 +49,10 @@ fun rememberGoogleSignInLauncher(
                 return@rememberLauncherForActivityResult
             }
 
+            // Navigation is driven by AuthViewModel.authGate in AppNavigation; only real errors are toasted here.
             authViewModel.signInWithGoogle(idToken) { success: Boolean, error: String? ->
-                if (success) {
-                    navController.navigate(onSuccessRoute) {
-                        popUpTo(navController.graph.startDestinationId) { inclusive = true }
-                        launchSingleTop = true
-                    }
-                } else {
-                    Toast.makeText(
-                        context,
-                        error ?: "Google sign-in failed",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                if (!success && error != null) {
+                    Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
                 }
             }
         } catch (e: ApiException) {

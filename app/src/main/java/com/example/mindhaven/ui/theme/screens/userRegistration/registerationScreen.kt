@@ -36,7 +36,6 @@ fun registrationScreen(
     onSuccessRoute: String // 👈 NEW PARAMETER
 ) {
     val context = LocalContext.current
-    val user by authViewModel.authState.observeAsState()
 
     // Google Sign-In launcher (shared logic)
     val launcher = rememberGoogleSignInLauncher(
@@ -45,14 +44,7 @@ fun registrationScreen(
         onSuccessRoute = onSuccessRoute
     )
 
-    // Navigate if user is already authenticated
-    LaunchedEffect(user) {
-        if (user != null) {
-            navController.navigate(onSuccessRoute) {
-                popUpTo(0) { inclusive = true }
-            }
-        }
-    }
+    // Navigation after a successful sign-in is driven by AuthViewModel.authGate in AppNavigation.
 
     Box(
         modifier = Modifier
