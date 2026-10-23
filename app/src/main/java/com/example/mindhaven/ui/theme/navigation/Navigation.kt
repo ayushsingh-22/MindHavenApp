@@ -10,6 +10,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.mindhaven.data.auth.AuthGate
+import com.example.mindhaven.data.auth.LinkState
+import com.example.mindhaven.ui.theme.screens.AccountLinkScreen
 import com.example.mindhaven.ui.theme.screens.ConnectionScreen
 import com.example.mindhaven.ui.theme.screens.LaunchScreen
 import com.example.mindhaven.ui.theme.screens.mainScreen
@@ -31,6 +33,8 @@ sealed class Screen(val route: String) {
     object launch : Screen(LAUNCH_ROUTE)
     /** Firebase signed in, backend unreachable: Retry / Sign out. */
     object connection : Screen(CONNECTION_ROUTE)
+    /** Firebase signed in, backend answered ACCOUNT_LINK_REQUIRED: restricted linking screen. */
+    object linkAccount : Screen(LINK_ROUTE)
 }
 
 @Composable
@@ -67,6 +71,18 @@ fun AppNavigation(
                 gate = gate,
                 onRetry = { authViewModel.retryBackend() },
                 onSignOut = { authViewModel.logout() }
+            )
+        }
+
+        composable(Screen.linkAccount.route) {
+            val linkState by authViewModel.linkState.observeAsState(LinkState.Idle)
+            AccountLinkScreen(
+                state = linkState,
+                googleSignInIntent = { authViewModel.getGoogleSignInIntent(it) },
+                onLink = { password, consent -> authViewModel.linkAccount(password, consent) },
+                onReauthenticateWithGoogle = { authViewModel.reauthenticateWithGoogle(it) },
+                onReauthenticateWithPassword = { authViewModel.reauthenticateWithPassword(it) },
+                onCancel = { authViewModel.cancelLinking() }
             )
         }
 

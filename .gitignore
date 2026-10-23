@@ -1,1 +1,15 @@
 app/google-services.json
+*.iml
+.gradle/
+.kotlin/
+build/
+/local.properties
+.idea/workspace.xml
+.idea/caches/
+.idea/deviceManager.xml
+.idea/deploymentTargetSelector.xml
+.idea/appInsightsSettings.xml
+.DS_Store
+captures/
+.externalNativeBuild/
+.cxx/

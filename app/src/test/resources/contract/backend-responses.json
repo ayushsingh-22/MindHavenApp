@@ -1,0 +1,180 @@
+{
+  "exchange_ok": {
+    "status": 200,
+    "retryAfter": null,
+    "body": {
+      "success": true,
+      "token": "API.JWT.FIXTURE-TOKEN",
+      "tokenType": "Bearer",
+      "expiresAt": 1792057340588,
+      "expiresIn": 300,
+      "provisioned": true,
+      "user": {
+        "id": "11111111-2222-4333-8444-555555555555",
+        "email": "person@example.invalid",
+        "fullName": "Test Person",
+        "avatarUrl": null
+      }
+    }
+  },
+  "exchange_400_validation": {
+    "status": 400,
+    "retryAfter": null,
+    "body": {
+      "success": false,
+      "error": "idToken is required",
+      "code": "VALIDATION_FAILED",
+      "requestId": "req-fixture"
+    }
+  },
+  "exchange_401_invalid_token": {
+    "status": 401,
+    "retryAfter": null,
+    "body": {
+      "success": false,
+      "error": "The sign-in token is invalid or has expired.",
+      "code": "INVALID_FIREBASE_TOKEN",
+      "requestId": "req-fixture"
+    }
+  },
+  "exchange_403_email_not_verified": {
+    "status": 403,
+    "retryAfter": null,
+    "body": {
+      "success": false,
+      "error": "Please verify your email address with your sign-in provider and try again.",
+      "code": "EMAIL_NOT_VERIFIED",
+      "requestId": "req-fixture"
+    }
+  },
+  "exchange_403_unsupported_method": {
+    "status": 403,
+    "retryAfter": null,
+    "body": {
+      "success": false,
+      "error": "This sign-in method is not supported.",
+      "code": "UNSUPPORTED_SIGN_IN_METHOD",
+      "requestId": "req-fixture"
+    }
+  },
+  "exchange_403_identity_disabled": {
+    "status": 403,
+    "retryAfter": null,
+    "body": {
+      "success": false,
+      "error": "This account cannot sign in.",
+      "code": "IDENTITY_DISABLED",
+      "requestId": "req-fixture"
+    }
+  },
+  "exchange_409_link_required": {
+    "status": 409,
+    "retryAfter": null,
+    "body": {
+      "success": false,
+      "error": "An account with this email already exists. It must be linked before you can sign in this way.",
+      "code": "ACCOUNT_LINK_REQUIRED",
+      "requestId": "req-fixture"
+    }
+  },
+  "exchange_413_too_large": {
+    "status": 413,
+    "retryAfter": null,
+    "body": {
+      "success": false,
+      "error": "Payload too large",
+      "requestId": "req-fixture"
+    }
+  },
+  "exchange_415_wrong_type": {
+    "status": 415,
+    "retryAfter": null,
+    "body": {
+      "success": false,
+      "error": "Content-Type must be application/json",
+      "code": "UNSUPPORTED_MEDIA_TYPE",
+      "requestId": "req-fixture"
+    }
+  },
+  "exchange_503_unavailable": {
+    "status": 503,
+    "retryAfter": null,
+    "body": {
+      "success": false,
+      "error": "Sign-in with this method is temporarily unavailable.",
+      "code": "IDENTITY_UNAVAILABLE",
+      "requestId": "req-fixture"
+    }
+  },
+  "exchange_429_rate_limited": {
+    "status": 429,
+    "retryAfter": "900",
+    "body": {
+      "success": false,
+      "error": "Too many sign-in attempts. Please try again later.",
+      "code": "RATE_LIMITED"
+    }
+  },
+  "exchange_404_disabled_route": {
+    "status": 404,
+    "retryAfter": null,
+    "body": {
+      "success": false,
+      "error": "Endpoint not found"
+    }
+  },
+  "me_ok": {
+    "status": 200,
+    "retryAfter": null,
+    "body": {
+      "success": true,
+      "user": {
+        "id": "11111111-2222-4333-8444-555555555555",
+        "email": "person@example.invalid",
+        "fullName": "Test Person",
+        "avatarUrl": null,
+        "createdAt": "2026-10-14T00:00:00.000Z",
+        "emailVerified": true,
+        "hasPassword": false,
+        "identities": [
+          {
+            "provider": "firebase",
+            "signInMethod": "google.com",
+            "emailVerified": true,
+            "linkMethod": "created",
+            "linkedAt": "2026-10-14T00:00:00.000Z",
+            "lastLoginAt": "2026-10-14T01:00:00.000Z",
+            "disabled": false
+          }
+        ]
+      }
+    }
+  },
+  "me_401_unauthenticated": {
+    "status": 401,
+    "retryAfter": null,
+    "body": {
+      "success": false,
+      "error": "Missing Authorization bearer token",
+      "code": "UNAUTHENTICATED"
+    }
+  },
+  "me_403_user_mismatch": {
+    "status": 403,
+    "retryAfter": null,
+    "body": {
+      "success": false,
+      "error": "Forbidden: user mismatch",
+      "code": "USER_MISMATCH"
+    }
+  },
+  "me_404_not_found": {
+    "status": 404,
+    "retryAfter": null,
+    "body": {
+      "success": false,
+      "error": "Account not found",
+      "code": "USER_NOT_FOUND"
+    }
+  }
+}
