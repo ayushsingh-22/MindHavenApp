@@ -10,8 +10,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.mindhaven.data.auth.AuthGate
-import com.example.mindhaven.data.auth.LinkState
-import com.example.mindhaven.ui.theme.screens.AccountLinkScreen
 import com.example.mindhaven.ui.theme.screens.ConnectionScreen
 import com.example.mindhaven.ui.theme.screens.LaunchScreen
 import com.example.mindhaven.ui.theme.screens.mainScreen
@@ -71,18 +69,6 @@ fun AppNavigation(
                 gate = gate,
                 onRetry = { authViewModel.retryBackend() },
                 onSignOut = { authViewModel.logout() }
-            )
-        }
-
-        composable(Screen.linkAccount.route) {
-            val linkState by authViewModel.linkState.observeAsState(LinkState.Idle)
-            AccountLinkScreen(
-                state = linkState,
-                googleSignInIntent = { authViewModel.getGoogleSignInIntent(it) },
-                onLink = { password, consent -> authViewModel.linkAccount(password, consent) },
-                onReauthenticateWithGoogle = { authViewModel.reauthenticateWithGoogle(it) },
-                onReauthenticateWithPassword = { authViewModel.reauthenticateWithPassword(it) },
-                onCancel = { authViewModel.cancelLinking() }
             )
         }
 

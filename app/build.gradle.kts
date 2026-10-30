@@ -1,3 +1,6 @@
+import java.util.Properties
+import java.net.URI
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -8,30 +11,23 @@ plugins {
     id("com.google.gms.google-services")
 }
 
-// ---- Backend base URL (Phase 2B.4) -------------------------------------------------------------
-// Debug builds talk to a DEVELOPMENT backend only. Default: the local Express server seen from the
-// Android emulator (10.0.2.2 = the host machine; the backend listens on PORT 8080 locally).
-// Override with  -PmindhavenDevApiUrl=https://<dev-host>  (e.g. in ~/.gradle/gradle.properties).
-// Release builds have NO default: set -PmindhavenReleaseApiUrl=https://<host> explicitly; with no value the app
-// reports "backend not configured" and makes no network calls. Both must stay off the production Render service
-// until the production migration + backend are deployed and approved.
-val productionHostMarkers = listOf("emotionsense-ai-3vxa.onrender.com")
+// Local development URL stays in the ignored SDK local.properties file.
+val localProperties = Properties().apply {
+    val localFile = rootProject.file("local.properties")
+    if (localFile.exists()) localFile.inputStream().use { load(it) }
+}
 fun cleanUrl(raw: String?): String = raw.orEmpty().trim().trimEnd('/')
-fun assertNotProduction(name: String, url: String) {
-    if (productionHostMarkers.any { url.contains(it, ignoreCase = true) } && project.findProperty("mindhavenAllowProdBackend") != "true") {
-        throw GradleException("$name points at the PRODUCTION backend. Not allowed until production is migrated and approved.")
-    }
-}
-val debugApiUrl = cleanUrl(project.findProperty("mindhavenDevApiUrl") as String?).ifEmpty { "http://10.0.2.2:8080" }
+val debugApiUrl = cleanUrl(localProperties.getProperty("mindhavenDevApiUrl")).ifEmpty { "http://10.0.2.2:8080" }
 val releaseApiUrl = cleanUrl(project.findProperty("mindhavenReleaseApiUrl") as String?)
-assertNotProduction("mindhavenDevApiUrl (debug)", debugApiUrl)
-if (releaseApiUrl.isNotEmpty()) {
-    assertNotProduction("mindhavenReleaseApiUrl", releaseApiUrl)
-    if (!releaseApiUrl.startsWith("https://")) throw GradleException("mindhavenReleaseApiUrl must be https:// (release builds never allow cleartext HTTP).")
+fun validateOrigin(value: String, release: Boolean) {
+    if (value.isEmpty() && release) return
+    val uri = try { URI(value) } catch (_: Exception) { throw GradleException("Invalid backend URL") }
+    if (uri.host.isNullOrEmpty() || uri.userInfo != null || uri.query != null || uri.fragment != null || !(uri.path.isNullOrEmpty() || uri.path == "/")) throw GradleException("Backend URL must be an origin")
+    if (release && uri.scheme != "https") throw GradleException("Release backend must be https://")
+    if (!release && uri.scheme !in listOf("http", "https")) throw GradleException("Unsupported debug backend scheme")
 }
-if (!debugApiUrl.startsWith("https://") && !Regex("""^http://(10\.0\.2\.2|localhost|127\.0\.0\.1)(:\d+)?$""").matches(debugApiUrl)) {
-    throw GradleException("mindhavenDevApiUrl: cleartext http:// is only allowed for the emulator/localhost (10.0.2.2, localhost, 127.0.0.1).")
-}
+validateOrigin(debugApiUrl, false)
+validateOrigin(releaseApiUrl, true)
 
 android {
     namespace = "com.example.mindhaven"
@@ -140,6 +136,7 @@ dependencies {
     implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
 
     // Backend networking (Phase 2B.4): one small HTTP client + typed JSON; coroutines for Firebase Tasks.
+    implementation("androidx.datastore:datastore-preferences:1.1.7")
     implementation(libs.okhttp)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)

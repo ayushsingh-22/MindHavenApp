@@ -23,11 +23,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.mindhaven.R
-import com.example.mindhaven.ui.theme.components.rememberGoogleSignInLauncher
 import com.example.mindhaven.ui.theme.*
 import com.example.mindhaven.viewmodel.AuthViewModel
-import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import androidx.compose.ui.text.input.VisualTransformation
 import com.example.mindhaven.ui.theme.navigation.Screen
 
@@ -47,13 +44,6 @@ fun SignUp(
     var passwordVisible by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
-
-    // Google Sign-In launcher
-    val launcher = rememberGoogleSignInLauncher(
-        authViewModel = authViewModel,
-        navController = navController,
-        onSuccessRoute = onSuccessRoute
-    )
 
     // Navigation after a successful sign-in is driven by AuthViewModel.authGate in AppNavigation (single source of truth).
 
@@ -195,32 +185,6 @@ fun SignUp(
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-
-            // Google Sign Up Button
-            Button(
-                onClick = { launcher.launch(authViewModel.getGoogleSignInIntent(context)) },
-                colors = ButtonDefaults.buttonColors(containerColor = Color.White),
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(55.dp),
-                elevation = ButtonDefaults.buttonElevation(6.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Image(
-                        painter = painterResource(id = R.drawable.google),
-                        contentDescription = "Google Logo",
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        "Continue with Google",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.Black
-                    )
-                }
-            }
 
             Spacer(modifier = Modifier.height(20.dp))
 
