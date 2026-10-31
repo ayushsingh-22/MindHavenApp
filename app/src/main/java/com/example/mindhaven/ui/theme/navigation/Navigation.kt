@@ -19,6 +19,14 @@ import com.example.mindhaven.ui.theme.screens.userRegistration.registrationScree
 import com.example.mindhaven.ui.theme.screens.userRegistration.SignUp
 import com.example.mindhaven.ui.theme.screens.welcomeScreen
 import com.example.mindhaven.viewmodel.AuthViewModel
+import com.example.mindhaven.viewmodel.AuthFlowViewModel
+import com.example.mindhaven.ui.theme.screens.userRegistration.LoginFlowScreen
+import com.example.mindhaven.ui.theme.screens.userRegistration.VerifyEmailScreen
+import com.example.mindhaven.ui.theme.screens.userRegistration.ForgotPasswordScreen
+import com.example.mindhaven.ui.theme.screens.userRegistration.ResetPasswordScreen
+import com.example.mindhaven.ui.theme.screens.userRegistration.ChangePasswordScreen
+import com.example.mindhaven.ui.theme.screens.userRegistration.DeleteAccountScreen
+import androidx.compose.runtime.collectAsState
 
 sealed class Screen(val route: String) {
     object registration : Screen("registration")
@@ -27,20 +35,20 @@ sealed class Screen(val route: String) {
     object main : Screen("main")
     object signUp : Screen("signUp")
     object profile : Screen("profile")
-    /** Verifying a restored/retried Firebase session with the backend. */
     object launch : Screen(LAUNCH_ROUTE)
-    /** Firebase signed in, backend unreachable: Retry / Sign out. */
     object connection : Screen(CONNECTION_ROUTE)
-    /** Firebase signed in, backend answered ACCOUNT_LINK_REQUIRED: restricted linking screen. */
-    object linkAccount : Screen(LINK_ROUTE)
 }
 
 @Composable
 fun AppNavigation(
     navController: NavHostController,
-    authViewModel: AuthViewModel = hiltViewModel()
+    authViewModel: AuthViewModel = hiltViewModel(),
+    flow: AuthFlowViewModel = hiltViewModel()
 ) {
-    // ONE source of truth: the authentication gate (Firebase + backend). Screens never navigate on auth themselves.
+    val flowUi by flow.ui.collectAsState()
+    LaunchedEffect(flowUi.destination) {
+        flowUi.destination?.let { route -> flow.clearNavigation(); navController.navigate(route) { launchSingleTop = true } }
+    }
     val gate by authViewModel.authGate.observeAsState(authViewModel.authGate.value ?: AuthGate.SignedOut)
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
@@ -81,20 +89,22 @@ fun AppNavigation(
         }
 
         composable(Screen.emailLogin.route) {
-            emailLogin(
-                navController = navController,
-                authViewModel = authViewModel,
-                onSuccessRoute = Screen.main.route
-            )
+            LoginFlowScreen(flow, onForgot = { flow.resetMessage(); navController.navigate("forgotPassword") }, onRegister = { flow.resetMessage(); navController.navigate("signUp") })
         }
 
         composable(Screen.signUp.route) {
             SignUp(
                 navController = navController,
                 authViewModel = authViewModel,
-                onSuccessRoute = Screen.main.route
+                onSuccessRoute = Screen.main.route, flow = flow
             )
         }
+
+        composable("verifyEmail") { VerifyEmailScreen(flow) }
+        composable("forgotPassword") { ForgotPasswordScreen(flow) }
+        composable("resetPassword") { ResetPasswordScreen(flow) }
+        composable("changePassword") { ChangePasswordScreen(flow) }
+        composable("deleteAccount") { DeleteAccountScreen(flow) }
 
         composable(Screen.welcome.route) {
             welcomeScreen(navController = navController)
@@ -103,7 +113,7 @@ fun AppNavigation(
         composable(Screen.profile.route) {
             profileScreen(
                 navController = navController,
-                authViewModel = authViewModel
+                authViewModel = authViewModel, flow = flow
             )
         }
 

@@ -34,7 +34,7 @@ sealed interface AuthResult {
 class BackendAuthRepository(
     baseUrl: String, private val store: TokenStore, private val network: BackendAuthNetwork,
     private val client: OkHttpClient, private val scope: CoroutineScope
-) {
+) : AuthActions {
     private val base = baseUrl.trimEnd('/').toHttpUrlOrNull()
     private val json = Json { ignoreUnknownKeys = true }
     private val mutableState = MutableStateFlow<SessionState>(SessionState.Connecting)
@@ -64,22 +64,22 @@ class BackendAuthRepository(
         } } catch (_: IOException) { mutableState.value = SessionState.Offline; AuthResult.Offline }
     }
     private fun body(vararg fields: Pair<String,String>) = mapOf(*fields)
-    suspend fun register(email: String, password: String, name: String): AuthResult {
+    override suspend fun register(email: String, password: String, name: String): AuthResult {
         val result = call("register", "POST", body("email" to email, "password" to password, "name" to name))
         if (result is AuthResult.Success) mutableState.value = SessionState.NeedsVerification
         return result
     }
-    suspend fun verifyEmail(email: String, otp: String) = call("verify-email", "POST", body("email" to email, "otp" to otp))
-    suspend fun resendVerification(email: String) = call("resend-verification", "POST", body("email" to email))
-    suspend fun forgotPassword(email: String) = call("forgot-password", "POST", body("email" to email))
-    suspend fun resetPassword(email: String, otp: String, password: String) = call("reset-password", "POST", body("email" to email, "otp" to otp, "password" to password))
+    override suspend fun verifyEmail(email: String, otp: String) = call("verify-email", "POST", body("email" to email, "otp" to otp))
+    override suspend fun resendVerification(email: String) = call("resend-verification", "POST", body("email" to email))
+    override suspend fun forgotPassword(email: String) = call("forgot-password", "POST", body("email" to email))
+    override suspend fun resetPassword(email: String, otp: String, password: String) = call("reset-password", "POST", body("email" to email, "otp" to otp, "password" to password))
     suspend fun me() = call("me", "GET")
     suspend fun refresh(): AuthResult {
         if (withContext(Dispatchers.IO) { network.refresh() }) return AuthResult.Success()
         val state = network.state.value
         return if (state is ConnectionState.ServiceBusy) AuthResult.ServiceBusy(state.retryAfterSeconds) else AuthResult.Invalid
     }
-    suspend fun login(email: String, password: String): AuthResult {
+    override suspend fun login(email: String, password: String): AuthResult {
         mutableState.value = SessionState.Connecting
         val result = call("login", "POST", body("email" to email, "password" to password))
         when(result) {
@@ -111,8 +111,8 @@ class BackendAuthRepository(
             else -> { store.clear(); mutableState.value = SessionState.LoggedOut }
         }
     }
-    suspend fun logout(): AuthResult { val result=call("logout", "POST"); network.clearSession(); mutableState.value=SessionState.LoggedOut; return result }
-    suspend fun logoutAll(): AuthResult { val result=call("logout-all", "POST"); if (result is AuthResult.Success) { network.clearSession(); mutableState.value=SessionState.LoggedOut }; return result }
-    suspend fun changePassword(currentPassword: String, newPassword: String): AuthResult { val result=call("change-password", "POST", body("currentPassword" to currentPassword,"newPassword" to newPassword)); if(result is AuthResult.Success){network.clearSession();mutableState.value=SessionState.LoggedOut};return result }
-    suspend fun deleteAccount(password: String): AuthResult { val result=call("account", "DELETE", body("password" to password));if(result is AuthResult.Success){network.clearSession();mutableState.value=SessionState.LoggedOut};return result }
+    override suspend fun logout(): AuthResult { val result=call("logout", "POST"); network.clearSession(); mutableState.value=SessionState.LoggedOut; return result }
+    override suspend fun logoutAll(): AuthResult { val result=call("logout-all", "POST"); if (result is AuthResult.Success) { network.clearSession(); mutableState.value=SessionState.LoggedOut }; return result }
+    override suspend fun changePassword(currentPassword: String, newPassword: String): AuthResult { val result=call("change-password", "POST", body("currentPassword" to currentPassword,"newPassword" to newPassword)); if(result is AuthResult.Success){network.clearSession();mutableState.value=SessionState.LoggedOut};return result }
+    override suspend fun deleteAccount(password: String): AuthResult { val result=call("account", "DELETE", body("password" to password));if(result is AuthResult.Success){network.clearSession();mutableState.value=SessionState.LoggedOut};return result }
 }

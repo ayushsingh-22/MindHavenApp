@@ -26,17 +26,20 @@ import androidx.navigation.NavHostController
 import com.example.mindhaven.R
 import com.example.mindhaven.ui.theme.*
 import com.example.mindhaven.viewmodel.AuthViewModel
+import com.example.mindhaven.viewmodel.AuthFlowViewModel
 import androidx.compose.ui.text.input.VisualTransformation
 @Composable
 fun emailLogin(
     navController: NavHostController,
     authViewModel: AuthViewModel,
-    onSuccessRoute: String
+    onSuccessRoute: String,
+    flow: AuthFlowViewModel
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    val error by authViewModel.error.observeAsState()
-    val loading by authViewModel.loading.observeAsState(false)
+    val flowUi by flow.ui.collectAsState()
+    val error = flowUi.message
+    val loading = flowUi.busy
     var passwordVisible by remember { mutableStateOf(false) }
 
 
@@ -133,7 +136,7 @@ fun emailLogin(
 
             // emailLogin Button
             Button(
-                onClick = { authViewModel.login(email, password) },
+                onClick = { flow.login(email, password) },
                 enabled = !loading,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -152,6 +155,8 @@ fun emailLogin(
             Spacer(modifier = Modifier.height(16.dp))
 
             Spacer(modifier = Modifier.height(20.dp))
+
+            TextButton(onClick = { flow.resetMessage(); navController.navigate("forgotPassword") }) { Text("Forgot password?") }
 
             // Sign Up option
             Row(

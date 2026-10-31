@@ -35,7 +35,7 @@ import com.example.mindhaven.ui.theme.TwilightLavender
 
 private val gateBackground = Brush.verticalGradient(listOf(LavenderBlush, PaleLavender, LavenderBlue))
 
-/** Shown while a restored (or retried) Firebase session is being verified with the backend. */
+/** Shown while a restored (or retried) session is being verified with the backend. */
 @Composable
 fun LaunchScreen() {
     Box(modifier = Modifier.fillMaxSize().background(gateBackground), contentAlignment = Alignment.Center) {
@@ -50,7 +50,7 @@ fun LaunchScreen() {
 }
 
 /**
- * Firebase is signed in but the backend could not verify the account (offline, timeout, 429, 503...).
+ * The backend could not verify the account (offline, timeout, 429, 503...).
  * The user is NOT inside the app; they can retry (bounded, see BackendSessionManager) or sign out.
  */
 @Composable

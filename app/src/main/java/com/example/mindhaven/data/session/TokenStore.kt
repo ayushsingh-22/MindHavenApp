@@ -3,6 +3,8 @@ package com.example.mindhaven.data.session
 import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -46,10 +48,9 @@ internal object TokenEnvelope {
 }
 
 /** Ciphertext only is persisted; backup/transfer rules exclude the entire app. */
-class KeystoreTokenStore(context: Context) : TokenStore {
-    private val store = context.applicationContext.tokenDataStore
+class KeystoreTokenStore internal constructor(private val store: DataStore<Preferences>, private val alias: String) : TokenStore {
+    constructor(context: Context) : this(context.applicationContext.tokenDataStore, "mindhaven.auth.tokens.v1")
     private val keyName = stringPreferencesKey("ciphertext")
-    private val alias = "mindhaven.auth.tokens.v1"
     private fun key(): SecretKey {
         val ks = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
         (ks.getKey(alias, null) as? SecretKey)?.let { return it }

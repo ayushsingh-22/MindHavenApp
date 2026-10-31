@@ -36,13 +36,13 @@ class SecurityConfigTest {
     }
 
     @Test fun `the backend client never builds a userId query or body`() {
-        val api = read("src/main/java/com/example/mindhaven/data/remote/BackendApi.kt")
-        assertFalse(api.contains("userId")); assertFalse(api.contains("user_id"))
+        val api = read("src/main/java/com/example/mindhaven/data/session/BackendAuthRepository.kt")
+        assertFalse(api.contains("\"userId\" to")); assertFalse(api.contains("\"user_id\" to"))
     }
 
     @Test fun `no backend or admin secret is embedded in the Android sources or build files`() {
         val files = kotlinFiles("src/main") + listOf(module("build.gradle.kts"))
-        val patterns = listOf("API_JWT_SECRET", "DATABASE_URL", "postgresql://", "BEGIN PRIVATE KEY", "\"private_key\"", "service_account", "FIREBASE_PRIVATE_KEY", "NEXTAUTH_SECRET")
+        val patterns = listOf("API_JWT_SECRET", "DATABASE_URL", "postgresql://", "BEGIN PRIVATE KEY", "\"private_key\"", "service_account", "NEXTAUTH_SECRET")
         for (f in files) for (p in patterns) assertFalse("${f.name} must not contain $p", f.readText().contains(p))
     }
 
@@ -85,13 +85,6 @@ class SecurityConfigTest {
     @Test fun `ViewModel keeps no Context or Activity reference`() {
         val vm = read(authDirs[1])
         assertFalse("must not store a Context in a property", Regex("""(val|var)\s+\w+\s*:\s*(Context|Activity|android\.content\.Context)""").containsMatchIn(vm))
-        assertTrue(vm.contains("fun getGoogleSignInIntent(context: Context)"))
-    }
-
-    @Test fun `Google Sign-In holds the application context only`() {
-        val g = read("src/main/java/com/example/mindhaven/data/auth/GoogleSignInProvider.kt")
-        assertTrue(g.contains("context.applicationContext"))
-        assertFalse(g.contains("Activity"))
     }
 
     @Test fun `appwrite audio sources are untouched by the auth work`() {

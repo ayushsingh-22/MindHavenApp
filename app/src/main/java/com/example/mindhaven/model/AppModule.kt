@@ -1,10 +1,9 @@
 ﻿package com.example.mindhaven.model
 
 import android.content.Context
-import android.content.Intent
 import com.example.mindhaven.BuildConfig
 import com.example.mindhaven.data.auth.AuthRepository
-import com.example.mindhaven.data.auth.GoogleSignInIntentSource
+import com.example.mindhaven.data.session.AuthActions
 import com.example.mindhaven.data.session.BackendAuthNetwork
 import com.example.mindhaven.data.session.BackendAuthRepository
 import com.example.mindhaven.data.session.KeystoreTokenStore
@@ -35,6 +34,6 @@ object AppModule {
         .followRedirects(false).followSslRedirects(false).retryOnConnectionFailure(false)
         .addInterceptor(network.interceptor).authenticator(network.authenticator).build()
     @Provides @Singleton fun backend(store: TokenStore, network: BackendAuthNetwork, client: OkHttpClient, @ApplicationScope scope: CoroutineScope): BackendAuthRepository = BackendAuthRepository(BuildConfig.API_BASE_URL,store,network,client,scope)
+    @Provides fun authActions(backend: BackendAuthRepository): AuthActions = backend
     @Provides @Singleton fun repository(backend: BackendAuthRepository,@ApplicationScope scope: CoroutineScope): AuthRepository = ScreenAuthAdapter(backend,scope)
-    @Provides fun disabledGoogle(): GoogleSignInIntentSource = GoogleSignInIntentSource { Intent() }
 }

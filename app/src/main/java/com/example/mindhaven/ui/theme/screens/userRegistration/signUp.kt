@@ -25,6 +25,7 @@ import androidx.navigation.NavHostController
 import com.example.mindhaven.R
 import com.example.mindhaven.ui.theme.*
 import com.example.mindhaven.viewmodel.AuthViewModel
+import com.example.mindhaven.viewmodel.AuthFlowViewModel
 import androidx.compose.ui.text.input.VisualTransformation
 import com.example.mindhaven.ui.theme.navigation.Screen
 
@@ -32,14 +33,16 @@ import com.example.mindhaven.ui.theme.navigation.Screen
 fun SignUp(
     navController: NavHostController,
     authViewModel: AuthViewModel,
-    onSuccessRoute: String
+    onSuccessRoute: String,
+    flow: AuthFlowViewModel
 ) {
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
-    val error by authViewModel.error.observeAsState()
-    val loading by authViewModel.loading.observeAsState(false)
+    val flowUi by flow.ui.collectAsState()
+    val error = flowUi.message
+    val loading = flowUi.busy
 
     var passwordVisible by remember { mutableStateOf(false) }
 
@@ -160,14 +163,16 @@ fun SignUp(
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            Text("At least 12 characters; at most 72 UTF-8 bytes.", color = TwilightLavender)
+
             // Sign Up Button
             Button(
                 onClick = {
                     if (password == confirmPassword) {
-                        authViewModel.signUp( email, password)
+                        flow.register(name, email, password)
                     } else {
 
-                        authViewModel.setError("Passwords do not match")
+                        flow.showMessage("Passwords do not match.")
                     }
                 },
                 modifier = Modifier

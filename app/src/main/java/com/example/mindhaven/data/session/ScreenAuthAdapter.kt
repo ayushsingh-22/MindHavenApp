@@ -6,20 +6,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-/** Compatibility for existing screens; no Firebase or Google service is used. */
+/** Adapter for the existing screens. */
 class ScreenAuthAdapter(private val backend: BackendAuthRepository, private val scope: CoroutineScope) : AuthRepository {
     private val gate = MutableStateFlow<AuthGate>(AuthGate.SignedOut)
     private val user = MutableStateFlow<AuthUser?>(null)
     private val status = MutableStateFlow<BackendStatus>(BackendStatus.Ok)
-    private val profileState = MutableStateFlow<ProfileState>(ProfileState.Idle)
-    private val notice = MutableStateFlow<String?>(null)
-    private val links = MutableStateFlow<LinkState>(LinkState.Idle)
     override val authGate: StateFlow<AuthGate> = gate
     override val authUser: StateFlow<AuthUser?> = user
     override val backendStatus: StateFlow<BackendStatus> = status
-    override val profile: StateFlow<ProfileState> = profileState
-    override val restoreNotice: StateFlow<String?> = notice
-    override val linkState: StateFlow<LinkState> = links
     init { scope.launch { backend.state.collect { state ->
         when(state) {
             is SessionState.LoggedIn -> { val u = AuthUser(state.userId,state.name,null); user.value=u;gate.value=AuthGate.Authenticated(u,state.userId);status.value=BackendStatus.Ok }
@@ -43,11 +37,5 @@ class ScreenAuthAdapter(private val backend: BackendAuthRepository, private val 
         else -> AuthOutcome.Failed("Unable to process the request.")
     }
     override suspend fun retryBackend(): AuthOutcome? { backend.restore(); return null }
-    override suspend fun refreshProfile() { backend.me() }
     override fun logout() { scope.launch { backend.logout() } }
-    override suspend fun signInWithGoogle(googleIdToken: String): AuthOutcome = AuthOutcome.Failed("This sign-in method is unavailable.")
-    override suspend fun linkAccount(webPassword: String, consent: Boolean) = Unit
-    override suspend fun reauthenticateWithGoogle(googleIdToken: String) = Unit
-    override suspend fun reauthenticateWithPassword(firebasePassword: String) = Unit
-    override fun cancelLinking() = Unit
 }

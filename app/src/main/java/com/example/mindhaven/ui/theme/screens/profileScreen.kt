@@ -37,14 +37,16 @@ import com.example.mindhaven.data.auth.BackendStatus
 import com.example.mindhaven.data.auth.TemporaryReason
 import com.example.mindhaven.ui.theme.*
 import com.example.mindhaven.viewmodel.AuthViewModel
+import com.example.mindhaven.viewmodel.AuthFlowViewModel
 import kotlinx.coroutines.launch
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun profileScreen(navController: NavHostController, authViewModel: AuthViewModel) {
+fun profileScreen(navController: NavHostController, authViewModel: AuthViewModel, flow: AuthFlowViewModel) {
     val context = LocalContext.current
+    val flowUi by flow.ui.collectAsState()
     val user by authViewModel.authState.observeAsState()
     val backendStatus by authViewModel.backendStatus.observeAsState()
     val scrollState = rememberScrollState()
@@ -140,7 +142,7 @@ fun profileScreen(navController: NavHostController, authViewModel: AuthViewModel
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Firebase is signed in, but the MantraAI backend is temporarily unreachable: the user stays signed in and can retry.
+            // The account service is temporarily unreachable; retry is available.
             (backendStatus as? BackendStatus.Unavailable)?.let { unavailable ->
                 BackendStatusBanner(status = unavailable, onRetry = { authViewModel.retryBackend() })
                 Spacer(modifier = Modifier.height(16.dp))
@@ -184,13 +186,16 @@ fun profileScreen(navController: NavHostController, authViewModel: AuthViewModel
                     Toast.makeText(context, "Sleep mode activated!", Toast.LENGTH_SHORT).show()
                 },
                 onLogout = {
-                    authViewModel.logout() // AppNavigation then shows Welcome with a cleared back stack
-                    Toast.makeText(context, "Logged out successfully", Toast.LENGTH_SHORT).show()
+                    flow.logout()
                 }
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            flowUi.message?.let { Text(it, color = TwilightLavender) }
+            Button(onClick = { flow.resetMessage(); navController.navigate("changePassword") }, modifier = Modifier.fillMaxWidth()) { Text("Change password") }
+            Button(onClick = { flow.logoutAll() }, modifier = Modifier.fillMaxWidth()) { Text("Log out of all devices") }
+            Button(onClick = { flow.resetMessage(); navController.navigate("deleteAccount") }, modifier = Modifier.fillMaxWidth()) { Text("Delete account") }
             // Enhanced daily tip card with tip rotation
             InteractiveDailyTipCard(
                 dailyTip = dailyTips[currentTipIndex],

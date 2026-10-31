@@ -67,10 +67,10 @@ class AuthNavigationTest {
         assertTrue("main" !in nav.navigations)
     }
 
-    @Test fun `503 or offline goes to the connection screen, never to main`() {
+    @Test fun `503 keeps sign-in on the form, never opens main`() {
         val nav = FakeNav(); nav.onState(AuthGate.SignedOut); nav.userOpens("emailLogin")
         nav.onState(AuthGate.BackendUnavailable(userA, TemporaryReason.ServiceUnavailable, null))
-        assertEquals(listOf(CONNECTION_ROUTE), nav.stack.toList())
+        assertEquals("emailLogin", nav.current)
         assertTrue("main" !in nav.navigations)
     }
 
@@ -137,47 +137,5 @@ class AuthNavigationTest {
         }
     }
 
-    // ------------------------------------------------------------------ Phase 2B.5B.3: restricted account linking
 
-    private val linkA = AuthGate.LinkRequired(userA)
-
-    @Test fun `409 on the login screen goes straight to the linking screen with a cleared back stack`() {
-        val nav = FakeNav(); nav.onState(AuthGate.SignedOut); nav.userOpens("registration"); nav.userOpens("emailLogin")
-        nav.onState(linkA)
-        assertEquals(listOf(LINK_ROUTE), nav.stack.toList())
-        assertNull("Back cannot return to the login form (or anywhere else)", nav.back())
-    }
-
-    @Test fun `LinkRequired never opens the app area, and repeated emissions navigate once`() {
-        val nav = FakeNav(); nav.onState(AuthGate.SignedOut); nav.userOpens("emailLogin")
-        repeat(10) { nav.onState(linkA) }
-        assertEquals(listOf("welcome", LINK_ROUTE), nav.navigations)
-        for (route in AUTHENTICATED_ROUTES) assertEquals(NavCommand(LINK_ROUTE), authNavigationCommand(linkA, route))
-    }
-
-    @Test fun `successful linking goes to main exactly once and Back cannot return to the password screen`() {
-        val nav = FakeNav(); nav.onState(linkA)
-        nav.onState(authA); nav.onState(authA)
-        assertEquals(listOf("main"), nav.stack.toList())
-        assertEquals(listOf(LINK_ROUTE, "main"), nav.navigations)
-        assertNull(nav.back())
-    }
-
-    @Test fun `cancel from the linking screen returns to welcome`() {
-        val nav = FakeNav(); nav.onState(linkA)
-        nav.onState(AuthGate.SignedOut)
-        assertEquals(listOf("welcome"), nav.stack.toList())
-    }
-
-    @Test fun `restart that ends in 409 goes launch then linking screen, never main`() {
-        val nav = FakeNav(); nav.onState(AuthGate.Verifying(userA)); nav.onState(linkA)
-        assertEquals(listOf(LINK_ROUTE), nav.stack.toList()); assertTrue("main" !in nav.navigations)
-    }
-
-    @Test fun `the linking route carries no arguments and every LinkRequired command clears the back stack`() {
-        assertFalse(LINK_ROUTE.contains("{") || LINK_ROUTE.contains("?") || LINK_ROUTE.contains("/"))
-        for (route in listOf(LAUNCH_ROUTE, CONNECTION_ROUTE, "welcome", "emailLogin", "main", "profile")) {
-            authNavigationCommand(linkA, route)?.let { assertTrue(it.clearBackStack); assertEquals(LINK_ROUTE, it.route) }
-        }
-    }
 }
