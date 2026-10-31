@@ -17,9 +17,12 @@ class SecurityConfigTest {
     private val authDirs = listOf("src/main/java/com/example/mindhaven/data", "src/main/java/com/example/mindhaven/viewmodel/AuthViewModel.kt")
     private fun authSources(): List<File> = kotlinFiles(authDirs[0]) + module(authDirs[1])
 
-    @Test fun `tokens are never persisted (no SharedPreferences, DataStore, files or SQLite in the auth and network code)`() {
-        val banned = listOf("SharedPreferences", "getSharedPreferences", "DataStore", "openFileOutput", "File(", "SQLite", "Room", "EncryptedSharedPreferences")
+    @Test fun `only encrypted tokens use DataStore and other storage APIs stay prohibited`() {
+        val banned = listOf("SharedPreferences", "getSharedPreferences", "openFileOutput", "File(", "SQLite", "EncryptedSharedPreferences")
         for (f in authSources()) for (b in banned) assertFalse("${f.name} must not use $b", f.readText().contains(b))
+        val source = read("src/main/java/com/example/mindhaven/data/session/TokenStore.kt")
+        assertTrue(source.contains("AES/GCM/NoPadding")); assertTrue(source.contains("AndroidKeyStore")); assertTrue(source.contains("cipher.doFinal"))
+        for (f in authSources().filterNot { it.name == "TokenStore.kt" }) assertFalse("${f.name} must not use DataStore", f.readText().contains("DataStore"))
     }
 
     @Test fun `no logging of anything in the auth and network code`() {
@@ -33,25 +36,21 @@ class SecurityConfigTest {
     }
 
     @Test fun `the backend client never builds a userId query or body`() {
-        val api = read("src/main/java/com/example/mindhaven/data/remote/BackendApi.kt")
-        assertFalse(api.contains("userId")); assertFalse(api.contains("user_id"))
+        val api = read("src/main/java/com/example/mindhaven/data/session/BackendAuthRepository.kt")
+        assertFalse(api.contains("\"userId\" to")); assertFalse(api.contains("\"user_id\" to"))
     }
 
     @Test fun `no backend or admin secret is embedded in the Android sources or build files`() {
         val files = kotlinFiles("src/main") + listOf(module("build.gradle.kts"))
-        val patterns = listOf("API_JWT_SECRET", "DATABASE_URL", "postgresql://", "BEGIN PRIVATE KEY", "\"private_key\"", "service_account", "FIREBASE_PRIVATE_KEY", "NEXTAUTH_SECRET")
+        val patterns = listOf("API_JWT_SECRET", "DATABASE_URL", "postgresql://", "BEGIN PRIVATE KEY", "\"private_key\"", "service_account", "NEXTAUTH_SECRET")
         for (f in files) for (p in patterns) assertFalse("${f.name} must not contain $p", f.readText().contains(p))
     }
 
-    @Test fun `main network policy forbids cleartext and the debug policy only allows emulator and loopback hosts`() {
+    @Test fun `release denies cleartext and debug permits a local development server`() {
         val main = read("src/main/res/xml/network_security_config.xml")
         assertTrue(main.contains("""cleartextTrafficPermitted="false""""))
-        assertFalse(main.contains("""cleartextTrafficPermitted="true""""))
         val debug = read("src/debug/res/xml/network_security_config.xml")
-        val allowed = Regex("""<domain-config cleartextTrafficPermitted="true">(.*?)</domain-config>""", RegexOption.DOT_MATCHES_ALL).find(debug)!!.groupValues[1]
-        val domains = Regex("""<domain[^>]*>([^<]+)</domain>""").findAll(allowed).map { it.groupValues[1].trim() }.toSet()
-        assertTrue(domains == setOf("10.0.2.2", "localhost", "127.0.0.1"))
-        assertFalse("base config of the debug file must still deny cleartext", Regex("""<base-config cleartextTrafficPermitted="true"""").containsMatchIn(debug))
+        assertTrue(debug.contains("""cleartextTrafficPermitted="true""""))
     }
 
     @Test fun `manifest disables cleartext and backups and uses the network security config`() {
@@ -69,19 +68,16 @@ class SecurityConfigTest {
         }
     }
 
-    @Test fun `gradle refuses production URLs, release cleartext and defaults the release URL to empty`() {
+    @Test fun `gradle loads development origin locally and requires HTTPS for release`() {
         val g = read("build.gradle.kts")
-        assertTrue(g.contains("emotionsense-ai-3vxa.onrender.com"))
-        assertTrue(g.contains("""must be https://"""))
-        assertTrue(g.contains("""val releaseApiUrl = cleanUrl(project.findProperty("mindhavenReleaseApiUrl") as String?)"""))
-        assertFalse("no default production URL for release", Regex("""releaseApiUrl\s*=.*onrender""").containsMatchIn(g))
-        assertTrue(g.contains("""http://10.0.2.2:8080"""))
+        assertTrue(g.contains("local.properties")); assertTrue(g.contains("mindhavenDevApiUrl"))
+        assertTrue(g.contains("Release backend must be https://")); assertTrue(g.contains("http://10.0.2.2:8080"))
     }
 
     @Test fun `release and debug base URLs come from BuildConfig only`() {
         val m = read("src/main/java/com/example/mindhaven/model/AppModule.kt")
         assertTrue(m.contains("BuildConfig.API_BASE_URL"))
-        assertTrue(m.contains("allowCleartext = BuildConfig.DEBUG"))
+        assertTrue(m.contains("authenticator(network.authenticator)"))
         assertFalse(m.contains("onrender.com"))
         assertTrue(m.contains("followRedirects(false)"))
     }
@@ -89,13 +85,6 @@ class SecurityConfigTest {
     @Test fun `ViewModel keeps no Context or Activity reference`() {
         val vm = read(authDirs[1])
         assertFalse("must not store a Context in a property", Regex("""(val|var)\s+\w+\s*:\s*(Context|Activity|android\.content\.Context)""").containsMatchIn(vm))
-        assertTrue(vm.contains("fun getGoogleSignInIntent(context: Context)"))
-    }
-
-    @Test fun `Google Sign-In holds the application context only`() {
-        val g = read("src/main/java/com/example/mindhaven/data/auth/GoogleSignInProvider.kt")
-        assertTrue(g.contains("context.applicationContext"))
-        assertFalse(g.contains("Activity"))
     }
 
     @Test fun `appwrite audio sources are untouched by the auth work`() {

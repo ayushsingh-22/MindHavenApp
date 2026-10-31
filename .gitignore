@@ -1,4 +1,4 @@
-app/google-services.json
+app/google-*.json
 *.iml
 .gradle/
 .kotlin/
@@ -13,3 +13,7 @@ build/
 captures/
 .externalNativeBuild/
 .cxx/
+
+# Never commit upload signing keys.
+*.jks
+*.keystore

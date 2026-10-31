@@ -1,154 +1,85 @@
 package com.example.mindhaven.viewmodel
 
-import android.content.Intent
-import androidx.arch.core.executor.testing.InstantTaskExecutorRule
-import com.example.mindhaven.data.auth.AuthGate
-import com.example.mindhaven.data.auth.BackendSessionManager
-import com.example.mindhaven.data.auth.DefaultAuthRepository
-import com.example.mindhaven.data.auth.GoogleSignInIntentSource
-import com.example.mindhaven.data.auth.LinkState
-import com.example.mindhaven.testsupport.FakeApi
-import com.example.mindhaven.testsupport.FakeApi.Companion.http
-import com.example.mindhaven.testsupport.FakeGateway
-import com.example.mindhaven.testsupport.FakeGoogle
-import com.example.mindhaven.testsupport.fbUser
-import com.example.mindhaven.ui.theme.navigation.NavCommand
-import com.example.mindhaven.ui.theme.navigation.authNavigationCommand
+import com.example.mindhaven.data.session.AuthActions
+import com.example.mindhaven.data.session.AuthResult
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.advanceTimeBy
-import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.runCurrent
-import kotlinx.coroutines.test.resetMain
-import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.test.*
 import org.junit.After
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
+import org.junit.Assert.*
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
 
-/**
- * End to end below the UI: AuthViewModel (the object the Compose screens observe) + the REAL repository and session
- * manager, with fake Firebase and backend. Proves the LiveData the NavHost reacts to changes right after the exchange.
- */
 @OptIn(ExperimentalCoroutinesApi::class)
 class AuthViewModelTest {
-    @get:Rule val instantLiveData = InstantTaskExecutorRule()
     private val dispatcher = StandardTestDispatcher()
-
-    @Before fun main() = Dispatchers.setMain(dispatcher)
-    @After fun reset() = Dispatchers.resetMain()
-
-    private fun TestScope.viewModel(gateway: FakeGateway, api: FakeApi): AuthViewModel {
-        val session = BackendSessionManager(gateway, api, scope = null, now = { testScheduler.currentTime }, pause = { kotlinx.coroutines.delay(it) })
-        val repo = DefaultAuthRepository(gateway, session, FakeGoogle(), backgroundScope, now = { testScheduler.currentTime })
-        return AuthViewModel(repo, GoogleSignInIntentSource { Intent() })
+    private class Fake : AuthActions {
+        var result: AuthResult = AuthResult.Success()
+        var calls=0; var name=""; var pause: CompletableDeferred<Unit>? = null
+        private suspend fun next(): AuthResult { calls++; pause?.await(); return result }
+        override suspend fun register(email:String,password:String,name:String):AuthResult { this.name=name;return next() }
+        override suspend fun verifyEmail(email:String,otp:String)=next()
+        override suspend fun resendVerification(email:String)=next()
+        override suspend fun login(email:String,password:String)=next()
+        override suspend fun forgotPassword(email:String)=next()
+        override suspend fun resetPassword(email:String,otp:String,password:String)=next()
+        override suspend fun changePassword(currentPassword:String,newPassword:String)=next()
+        override suspend fun logout()=next()
+        override suspend fun logoutAll()=next()
+        override suspend fun deleteAccount(password:String)=next()
     }
-
-    @Test fun `email login updates authGate LiveData to Authenticated as soon as the exchange succeeds`() = runTest(dispatcher) {
-        val gateway = FakeGateway().apply { signInResult = fbUser("fb-1", verified = true) }
-        val vm = viewModel(gateway, FakeApi())
-        advanceUntilIdle()
-        assertEquals(AuthGate.SignedOut, vm.authGate.value)
-        vm.login("a@example.invalid", "pw-123456")
-        advanceUntilIdle()
-        assertTrue(vm.authGate.value is AuthGate.Authenticated)
-        assertEquals("fb-1", vm.authState.value?.uid)
-        assertEquals("the navigation decision on the login screen is: go to main", NavCommand("main"), authNavigationCommand(vm.authGate.value!!, "emailLogin"))
-        assertFalse(vm.loading.value!!)
-        assertNull(vm.error.value)
+    private lateinit var fake: Fake
+    private lateinit var vm: AuthFlowViewModel
+    private val valid = "abcdefghijkl"
+    @Before fun setup(){ Dispatchers.setMain(dispatcher);fake=Fake();vm=AuthFlowViewModel(fake) }
+    @After fun cleanup(){ Dispatchers.resetMain() }
+    @Test fun registrationAndCooldown() = runTest(dispatcher) {
+        vm.register("Name","test",valid);runCurrent();assertEquals("Name",fake.name);assertEquals("verifyEmail",vm.ui.value.destination);assertEquals(60,vm.ui.value.cooldown)
+        vm.resend();runCurrent();assertEquals(1,fake.calls);advanceTimeBy(60000);runCurrent();assertEquals(0,vm.ui.value.cooldown);vm.resend();runCurrent();assertEquals(2,fake.calls)
     }
-
-    @Test fun `google login callback reports success and the gate opens`() = runTest(dispatcher) {
-        val gateway = FakeGateway().apply { googleResult = fbUser("fb-g", providers = listOf("google.com")) }
-        val vm = viewModel(gateway, FakeApi())
-        var callback: Pair<Boolean, String?>? = null
-        vm.signInWithGoogle("google-token") { ok, err -> callback = ok to err }
-        advanceUntilIdle()
-        assertEquals(true to null, callback)
-        assertTrue(vm.authGate.value is AuthGate.Authenticated)
+    @Test fun registrationAndResendFailures() = runTest(dispatcher) {
+        fake.result=AuthResult.Invalid;vm.register("Name","test",valid);runCurrent();assertTrue(vm.ui.value.message!!.contains("Unable"));assertNull(vm.ui.value.destination)
+        vm.setEmail("test");fake.result=AuthResult.ServiceBusy(3);vm.resend();runCurrent();assertTrue(vm.ui.value.message!!.contains("busy"));assertEquals(0,vm.ui.value.cooldown)
+        fake.result=AuthResult.Offline;vm.resend();runCurrent();assertTrue(vm.ui.value.message!!.contains("connect"))
     }
-
-    @Test fun `409 navigates from the login screen to the restricted linking screen, never to main, without an error toast`() = runTest(dispatcher) {
-        val gateway = FakeGateway().apply { googleResult = fbUser("fb-g", providers = listOf("google.com")) }
-        val vm = viewModel(gateway, FakeApi(listOf(http(409, "ACCOUNT_LINK_REQUIRED"))))
-        var callback: Pair<Boolean, String?>? = null
-        vm.signInWithGoogle("g") { ok, err -> callback = ok to err }
-        advanceUntilIdle()
-        assertTrue(vm.authGate.value is AuthGate.LinkRequired)
-        assertEquals(NavCommand("linkAccount"), authNavigationCommand(vm.authGate.value!!, "emailLogin"))
-        assertNull(vm.authState.value)
-        assertEquals(false to null, callback)
-        assertNull(vm.error.value)
+    @Test fun logoutFailureReportsLocalOnly() = runTest(dispatcher) {
+        fake.result=AuthResult.Offline;vm.logout();runCurrent();assertEquals("emailLogin",vm.ui.value.destination);assertTrue(vm.ui.value.message!!.contains("could not confirm"))
     }
-
-    @Test fun `503 keeps Firebase, shows the connection screen, and Retry success navigates to main`() = runTest(dispatcher) {
-        val gateway = FakeGateway().apply { googleResult = fbUser("fb-g", providers = listOf("google.com")) }
-        val vm = viewModel(gateway, FakeApi(listOf(http(503), http(503), http(503), FakeApi.ok())))
-        vm.signInWithGoogle("g") { _, _ -> }
-        advanceUntilIdle()
-        assertTrue(vm.authGate.value is AuthGate.BackendUnavailable)
-        assertEquals(NavCommand("connection"), authNavigationCommand(vm.authGate.value!!, "emailLogin"))
-        assertEquals(0, gateway.signOutCount)
-        vm.retryBackend()
-        advanceUntilIdle()
-        assertTrue(vm.authGate.value is AuthGate.Authenticated)
-        assertEquals(NavCommand("main"), authNavigationCommand(vm.authGate.value!!, "connection"))
+    @Test fun loginStates() = runTest(dispatcher) {
+        fake.result=AuthResult.Invalid;vm.login("test",valid);runCurrent();assertEquals("Invalid email or password.",vm.ui.value.message)
+        fake.result=AuthResult.NeedsVerification;vm.login("test",valid);runCurrent();assertEquals("verifyEmail",vm.ui.value.destination)
+        vm.clearNavigation();fake.result=AuthResult.Success();vm.login("test",valid);runCurrent();assertNull(vm.ui.value.message)
+        fake.result=AuthResult.ServiceBusy(3);vm.login("test",valid);runCurrent();assertTrue(vm.ui.value.message!!.contains("busy"))
+        fake.result=AuthResult.Offline;vm.login("test",valid);runCurrent();assertTrue(vm.ui.value.message!!.contains("connect"))
     }
-
-    @Test fun `restart starts in Verifying (launch screen), then opens only after the backend accepts`() = runTest(dispatcher) {
-        val gateway = FakeGateway(fbUser("fb-1", providers = listOf("google.com")))
-        val vm = viewModel(gateway, FakeApi(latencyMs = 300))
-        assertTrue("first frame after restart: verifying, not Home", vm.authGate.value is AuthGate.Verifying)
-        assertNull(authNavigationCommand(vm.authGate.value!!, "launch"))
-        advanceTimeBy(100); runCurrent()
-        assertTrue("still verifying while the backend has not answered", vm.authGate.value is AuthGate.Verifying)
-        advanceTimeBy(1_000); runCurrent() // background work: advance virtual time explicitly
-        assertTrue(vm.authGate.value is AuthGate.Authenticated)
+    @Test fun verificationSuccessAndFailure() = runTest(dispatcher) {
+        vm.setEmail("test");fake.result=AuthResult.Invalid;vm.verify("123456");runCurrent();assertTrue(vm.ui.value.message!!.contains("Invalid"))
+        fake.result=AuthResult.Success();vm.verify("123456");runCurrent();assertEquals("emailLogin",vm.ui.value.destination)
     }
-
-    @Test fun `logout goes back to SignedOut (welcome with a cleared back stack)`() = runTest(dispatcher) {
-        val gateway = FakeGateway(fbUser("fb-1", providers = listOf("google.com")))
-        val vm = viewModel(gateway, FakeApi())
-        advanceUntilIdle()
-        assertTrue(vm.authGate.value is AuthGate.Authenticated)
-        vm.logout()
-        advanceUntilIdle()
-        assertEquals(AuthGate.SignedOut, vm.authGate.value)
-        assertEquals(NavCommand("welcome", clearBackStack = true), authNavigationCommand(vm.authGate.value!!, "profile"))
+    @Test fun resetFlowSuccessAndFailure() = runTest(dispatcher) {
+        fake.result=AuthResult.Invalid;vm.forgot("test");runCurrent();assertTrue(vm.ui.value.message!!.contains("Unable"))
+        fake.result=AuthResult.Success();vm.forgot("test");runCurrent();assertEquals("resetPassword",vm.ui.value.destination)
+        vm.clearNavigation();fake.result=AuthResult.Invalid;vm.reset("123456",valid);runCurrent();assertTrue(vm.ui.value.message!!.contains("Invalid"))
+        fake.result=AuthResult.Success();vm.reset("123456",valid);runCurrent();assertEquals("emailLogin",vm.ui.value.destination)
     }
-
-    @Test fun `linking through the ViewModel - duplicate taps start once, success navigates to main, cancel signs out`() = runTest(dispatcher) {
-        val gateway = FakeGateway().apply { googleResult = fbUser("fb-g", providers = listOf("google.com")) }
-        val api = FakeApi(listOf(http(409, "ACCOUNT_LINK_REQUIRED"), FakeApi.ok("neon-web"))).apply {
-            latencyMs = 200; linkCompleteScript = listOf(FakeApi.linked("neon-web"))
-        }
-        val vm = viewModel(gateway, api)
-        vm.signInWithGoogle("g") { _, _ -> }
-        advanceUntilIdle()
-        assertTrue(vm.authGate.value is AuthGate.LinkRequired)
-        assertEquals(LinkState.Idle, vm.linkState.value)
-        vm.linkAccount("web-pw", consent = true); vm.linkAccount("web-pw", consent = true); vm.linkAccount("web-pw", consent = true)
-        advanceUntilIdle()
-        assertEquals(1, api.linkStartCalls); assertEquals(1, api.linkCompleteCalls)
-        assertEquals("neon-web", (vm.authGate.value as AuthGate.Authenticated).userId)
-        assertEquals(NavCommand("main"), authNavigationCommand(vm.authGate.value!!, "linkAccount"))
-
-        // A second user who cancels instead.
-        val g2 = FakeGateway().apply { googleResult = fbUser("fb-h", providers = listOf("google.com")) }
-        val vm2 = viewModel(g2, FakeApi(listOf(http(409, "ACCOUNT_LINK_REQUIRED"))))
-        vm2.signInWithGoogle("g") { _, _ -> }
-        advanceUntilIdle()
-        vm2.cancelLinking()
-        advanceUntilIdle()
-        assertEquals(AuthGate.SignedOut, vm2.authGate.value); assertEquals(1, g2.signOutCount)
-        assertEquals(NavCommand("welcome"), authNavigationCommand(vm2.authGate.value!!, "linkAccount"))
+    @Test fun changePasswordAndDelete() = runTest(dispatcher) {
+        fake.result=AuthResult.Invalid;vm.change("old",valid);runCurrent();assertEquals("Current password is incorrect.",vm.ui.value.message)
+        fake.result=AuthResult.Success();vm.change("old",valid);runCurrent();assertEquals("emailLogin",vm.ui.value.destination)
+        vm.clearNavigation();fake.result=AuthResult.Invalid;vm.delete("old");runCurrent();assertTrue(vm.ui.value.message!!.contains("Unable"))
+        fake.result=AuthResult.Success();vm.delete("old");runCurrent();assertEquals("emailLogin",vm.ui.value.destination)
+    }
+    @Test fun logoutAllAndLogout() = runTest(dispatcher) {
+        fake.result=AuthResult.Invalid;vm.logoutAll();runCurrent();assertTrue(vm.ui.value.message!!.contains("Unable"))
+        fake.result=AuthResult.Success();vm.logoutAll();runCurrent();assertEquals("emailLogin",vm.ui.value.destination)
+        vm.clearNavigation();vm.logout();runCurrent();assertEquals("emailLogin",vm.ui.value.destination)
+    }
+    @Test fun passwordAndCodeValidation() = runTest(dispatcher) {
+        vm.register("Name","test","short");runCurrent();assertEquals(0,fake.calls)
+        vm.verify("123");runCurrent();assertEquals(0,fake.calls)
+        vm.register("Name","test","😀".repeat(20));runCurrent();assertEquals(0,fake.calls)
+    }
+    @Test fun connectingIsVisibleDuringCall() = runTest(dispatcher) {
+        fake.pause=CompletableDeferred();vm.login("test",valid);runCurrent();assertTrue(vm.ui.value.busy);fake.pause!!.complete(Unit);runCurrent();assertFalse(vm.ui.value.busy)
     }
 }

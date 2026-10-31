@@ -24,33 +24,26 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.mindhaven.R
-import com.example.mindhaven.ui.theme.components.rememberGoogleSignInLauncher
 import com.example.mindhaven.ui.theme.*
 import com.example.mindhaven.viewmodel.AuthViewModel
-import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.example.mindhaven.viewmodel.AuthFlowViewModel
 import androidx.compose.ui.text.input.VisualTransformation
 @Composable
 fun emailLogin(
     navController: NavHostController,
     authViewModel: AuthViewModel,
-    onSuccessRoute: String
+    onSuccessRoute: String,
+    flow: AuthFlowViewModel
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    val error by authViewModel.error.observeAsState()
-    val loading by authViewModel.loading.observeAsState(false)
+    val flowUi by flow.ui.collectAsState()
+    val error = flowUi.message
+    val loading = flowUi.busy
     var passwordVisible by remember { mutableStateOf(false) }
 
 
     val context = LocalContext.current
-
-    // Google Sign-In launcher (shared between login & registration)
-    val launcher = rememberGoogleSignInLauncher(
-        authViewModel = authViewModel,
-        navController = navController,
-        onSuccessRoute = onSuccessRoute
-    )
 
     // Navigation after a successful sign-in is driven by AuthViewModel.authGate in AppNavigation (single source of truth).
 
@@ -143,7 +136,7 @@ fun emailLogin(
 
             // emailLogin Button
             Button(
-                onClick = { authViewModel.login(email, password) },
+                onClick = { flow.login(email, password) },
                 enabled = !loading,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -161,34 +154,9 @@ fun emailLogin(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Google emailLogin Button
-            Button(
-                onClick = { launcher.launch(authViewModel.getGoogleSignInIntent(context)) },
-                enabled = !loading,
-                colors = ButtonDefaults.buttonColors(containerColor = Color.White),
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(55.dp),
-                elevation = ButtonDefaults.buttonElevation(6.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Image(
-                        painter = painterResource(id = R.drawable.google),
-                        contentDescription = "Google Logo",
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        "Continue with Google",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.Black
-                    )
-                }
-            }
-
             Spacer(modifier = Modifier.height(20.dp))
+
+            TextButton(onClick = { flow.resetMessage(); navController.navigate("forgotPassword") }) { Text("Forgot password?") }
 
             // Sign Up option
             Row(

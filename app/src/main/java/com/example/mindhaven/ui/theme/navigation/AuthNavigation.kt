@@ -6,15 +6,13 @@ import com.example.mindhaven.data.auth.AuthGate
 data class NavCommand(val route: String, val clearBackStack: Boolean = true)
 
 /** Routes reachable while signed out (the user may move freely between them; no auth navigation happens). */
-val SIGNED_OUT_ROUTES = setOf("welcome", "registration", "emailLogin", "signUp")
+val SIGNED_OUT_ROUTES = setOf("welcome", "registration", "emailLogin", "signUp", "verifyEmail", "forgotPassword", "resetPassword")
 
 /** Routes of the authenticated app area. */
-val AUTHENTICATED_ROUTES = setOf("main", "profile")
+val AUTHENTICATED_ROUTES = setOf("main", "profile", "changePassword", "deleteAccount")
 
 const val LAUNCH_ROUTE = "launch"
 const val CONNECTION_ROUTE = "connection"
-/** Restricted account-linking screen (no arguments: nothing secret ever travels in a route). */
-const val LINK_ROUTE = "linkAccount"
 
 /**
  * The ONLY place that decides auth-driven navigation. Pure (no Android types) so it is unit-tested.
@@ -26,7 +24,6 @@ const val LINK_ROUTE = "linkAccount"
  *  - Verifying          -> launch screen (or stay on the connection screen while a Retry runs)
  *  - Authenticated      -> main (unless already inside the app area)
  *  - BackendUnavailable -> connection screen (Retry / Sign out); never the app area
- *  - LinkRequired       -> linking screen ONLY; never the app area (no API token exists in this state)
  *
  * Every command clears the back stack, so Back can never return to the login screens after success, nor into the app
  * after logout.
@@ -35,10 +32,9 @@ fun authNavigationCommand(gate: AuthGate, currentRoute: String?): NavCommand? {
     if (currentRoute == null) return null // the graph is not attached yet; the effect re-runs once it is
     val target = when (gate) {
         AuthGate.SignedOut -> if (currentRoute in SIGNED_OUT_ROUTES) null else "welcome"
-        is AuthGate.Verifying -> if (currentRoute == LAUNCH_ROUTE || currentRoute == CONNECTION_ROUTE) null else LAUNCH_ROUTE
+        is AuthGate.Verifying -> if (currentRoute == LAUNCH_ROUTE || currentRoute == CONNECTION_ROUTE || currentRoute in SIGNED_OUT_ROUTES) null else LAUNCH_ROUTE
         is AuthGate.Authenticated -> if (currentRoute in AUTHENTICATED_ROUTES) null else "main"
-        is AuthGate.BackendUnavailable -> if (currentRoute == CONNECTION_ROUTE) null else CONNECTION_ROUTE
-        is AuthGate.LinkRequired -> if (currentRoute == LINK_ROUTE) null else LINK_ROUTE
+        is AuthGate.BackendUnavailable -> if (currentRoute == CONNECTION_ROUTE || currentRoute in SIGNED_OUT_ROUTES) null else CONNECTION_ROUTE
     }
     return target?.let { NavCommand(it) }
 }

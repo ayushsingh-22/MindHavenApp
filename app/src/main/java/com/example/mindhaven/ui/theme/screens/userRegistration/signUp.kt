@@ -23,11 +23,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.mindhaven.R
-import com.example.mindhaven.ui.theme.components.rememberGoogleSignInLauncher
 import com.example.mindhaven.ui.theme.*
 import com.example.mindhaven.viewmodel.AuthViewModel
-import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.example.mindhaven.viewmodel.AuthFlowViewModel
 import androidx.compose.ui.text.input.VisualTransformation
 import com.example.mindhaven.ui.theme.navigation.Screen
 
@@ -35,25 +33,20 @@ import com.example.mindhaven.ui.theme.navigation.Screen
 fun SignUp(
     navController: NavHostController,
     authViewModel: AuthViewModel,
-    onSuccessRoute: String
+    onSuccessRoute: String,
+    flow: AuthFlowViewModel
 ) {
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
-    val error by authViewModel.error.observeAsState()
-    val loading by authViewModel.loading.observeAsState(false)
+    val flowUi by flow.ui.collectAsState()
+    val error = flowUi.message
+    val loading = flowUi.busy
 
     var passwordVisible by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
-
-    // Google Sign-In launcher
-    val launcher = rememberGoogleSignInLauncher(
-        authViewModel = authViewModel,
-        navController = navController,
-        onSuccessRoute = onSuccessRoute
-    )
 
     // Navigation after a successful sign-in is driven by AuthViewModel.authGate in AppNavigation (single source of truth).
 
@@ -170,14 +163,16 @@ fun SignUp(
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            Text("At least 12 characters; at most 72 UTF-8 bytes.", color = TwilightLavender)
+
             // Sign Up Button
             Button(
                 onClick = {
                     if (password == confirmPassword) {
-                        authViewModel.signUp( email, password)
+                        flow.register(name, email, password)
                     } else {
 
-                        authViewModel.setError("Passwords do not match")
+                        flow.showMessage("Passwords do not match.")
                     }
                 },
                 modifier = Modifier
@@ -195,32 +190,6 @@ fun SignUp(
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-
-            // Google Sign Up Button
-            Button(
-                onClick = { launcher.launch(authViewModel.getGoogleSignInIntent(context)) },
-                colors = ButtonDefaults.buttonColors(containerColor = Color.White),
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(55.dp),
-                elevation = ButtonDefaults.buttonElevation(6.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Image(
-                        painter = painterResource(id = R.drawable.google),
-                        contentDescription = "Google Logo",
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        "Continue with Google",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.Black
-                    )
-                }
-            }
 
             Spacer(modifier = Modifier.height(20.dp))
 

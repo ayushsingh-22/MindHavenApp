@@ -1,3 +1,6 @@
+import java.util.Properties
+import java.net.URI
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -5,33 +8,31 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     id("org.jetbrains.kotlin.kapt")
     id("com.google.dagger.hilt.android")
-    id("com.google.gms.google-services")
 }
 
-// ---- Backend base URL (Phase 2B.4) -------------------------------------------------------------
-// Debug builds talk to a DEVELOPMENT backend only. Default: the local Express server seen from the
-// Android emulator (10.0.2.2 = the host machine; the backend listens on PORT 8080 locally).
-// Override with  -PmindhavenDevApiUrl=https://<dev-host>  (e.g. in ~/.gradle/gradle.properties).
-// Release builds have NO default: set -PmindhavenReleaseApiUrl=https://<host> explicitly; with no value the app
-// reports "backend not configured" and makes no network calls. Both must stay off the production Render service
-// until the production migration + backend are deployed and approved.
-val productionHostMarkers = listOf("emotionsense-ai-3vxa.onrender.com")
+// Local development URL stays in the ignored SDK local.properties file.
+val localProperties = Properties().apply {
+    val localFile = rootProject.file("local.properties")
+    if (localFile.exists()) localFile.inputStream().use { load(it) }
+}
 fun cleanUrl(raw: String?): String = raw.orEmpty().trim().trimEnd('/')
-fun assertNotProduction(name: String, url: String) {
-    if (productionHostMarkers.any { url.contains(it, ignoreCase = true) } && project.findProperty("mindhavenAllowProdBackend") != "true") {
-        throw GradleException("$name points at the PRODUCTION backend. Not allowed until production is migrated and approved.")
-    }
+val debugApiUrl = cleanUrl(localProperties.getProperty("mindhavenDevApiUrl")).ifEmpty { "http://10.0.2.2:8080" }
+val releaseApiUrl = cleanUrl(project.findProperty("mindhavenReleaseApiUrl") as String? ?: "https://emotionsense-ai-3vxa.onrender.com")
+fun signingValue(property: String, environment: String): String? = localProperties.getProperty(property)?.takeIf { it.isNotBlank() } ?: System.getenv(environment)?.takeIf { it.isNotBlank() }
+val uploadStore = signingValue("mindhavenUploadStoreFile", "MINDHAVEN_UPLOAD_STORE_FILE")
+val uploadStorePassword = signingValue("mindhavenUploadStorePassword", "MINDHAVEN_UPLOAD_STORE_PASSWORD")
+val uploadKeyAlias = signingValue("mindhavenUploadKeyAlias", "MINDHAVEN_UPLOAD_KEY_ALIAS")
+val uploadKeyPassword = signingValue("mindhavenUploadKeyPassword", "MINDHAVEN_UPLOAD_KEY_PASSWORD")
+val signingValues = listOf(uploadStore, uploadStorePassword, uploadKeyAlias, uploadKeyPassword)
+if (signingValues.any { it != null } && signingValues.any { it == null }) throw GradleException("All four upload signing settings are required together")
+fun validateOrigin(value: String, release: Boolean) {
+    val uri = try { URI(value) } catch (_: Exception) { throw GradleException("Invalid backend URL") }
+    if (uri.host.isNullOrEmpty() || uri.userInfo != null || uri.query != null || uri.fragment != null || !(uri.path.isNullOrEmpty() || uri.path == "/")) throw GradleException("Backend URL must be an origin")
+    if (release && uri.scheme != "https") throw GradleException("Release backend must be https://")
+    if (!release && uri.scheme !in listOf("http", "https")) throw GradleException("Unsupported debug backend scheme")
 }
-val debugApiUrl = cleanUrl(project.findProperty("mindhavenDevApiUrl") as String?).ifEmpty { "http://10.0.2.2:8080" }
-val releaseApiUrl = cleanUrl(project.findProperty("mindhavenReleaseApiUrl") as String?)
-assertNotProduction("mindhavenDevApiUrl (debug)", debugApiUrl)
-if (releaseApiUrl.isNotEmpty()) {
-    assertNotProduction("mindhavenReleaseApiUrl", releaseApiUrl)
-    if (!releaseApiUrl.startsWith("https://")) throw GradleException("mindhavenReleaseApiUrl must be https:// (release builds never allow cleartext HTTP).")
-}
-if (!debugApiUrl.startsWith("https://") && !Regex("""^http://(10\.0\.2\.2|localhost|127\.0\.0\.1)(:\d+)?$""").matches(debugApiUrl)) {
-    throw GradleException("mindhavenDevApiUrl: cleartext http:// is only allowed for the emulator/localhost (10.0.2.2, localhost, 127.0.0.1).")
-}
+validateOrigin(debugApiUrl, false)
+validateOrigin(releaseApiUrl, true)
 
 android {
     namespace = "com.example.mindhaven"
@@ -41,8 +42,9 @@ android {
         applicationId = "com.example.mindhaven"
         minSdk = 33
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        // Increase the integer for every Play upload; use a human-readable release name.
+        versionCode = (project.findProperty("mindhavenVersionCode") as String?)?.let { it.toIntOrNull()?.takeIf { n -> n > 0 } ?: throw GradleException("mindhavenVersionCode must be a positive integer") } ?: 1
+        versionName = (project.findProperty("mindhavenVersionName") as String?)?.takeIf { it.isNotBlank() } ?: "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -57,13 +59,27 @@ android {
         }
     }
 
+    signingConfigs {
+        if (signingValues.all { it != null }) {
+            create("upload") {
+                storeFile = rootProject.file(uploadStore!!)
+                storePassword = uploadStorePassword
+                keyAlias = uploadKeyAlias
+                keyPassword = uploadKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         debug {
             buildConfigField("String", "API_BASE_URL", "\"$debugApiUrl\"")
         }
         release {
             buildConfigField("String", "API_BASE_URL", "\"$releaseApiUrl\"")
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            isDebuggable = false
+            signingConfig = signingConfigs.findByName("upload")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -98,11 +114,7 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.foundation)
-    implementation(libs.play.services.auth)
     implementation(libs.androidx.runtime.livedata)
-    implementation(libs.androidx.credentials)
-    implementation(libs.androidx.credentials.play.services.auth)
-    implementation(libs.googleid)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.okhttp.mockwebserver)
@@ -133,17 +145,13 @@ dependencies {
 
     implementation("io.coil-kt:coil-compose:2.7.0")
 
-    implementation(platform("com.google.firebase:firebase-bom:34.1.0"))
-    implementation("com.google.firebase:firebase-analytics")
-    implementation("com.google.firebase:firebase-auth")
 
     implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
 
-    // Backend networking (Phase 2B.4): one small HTTP client + typed JSON; coroutines for Firebase Tasks.
+    implementation("androidx.datastore:datastore-preferences:1.1.7")
     implementation(libs.okhttp)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
-    implementation(libs.kotlinx.coroutines.play.services)
 
 
 }

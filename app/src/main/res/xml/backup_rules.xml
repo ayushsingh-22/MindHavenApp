@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Auto Backup (API < 31): nothing is backed up. This app keeps no data worth restoring, and Firebase Auth state, any
+  Auto Backup (API < 31): nothing is backed up. This app keeps no data worth restoring, and session state, any
   account identifiers and wellbeing data must never leave the device through a cloud backup.
   (The manifest also sets android:allowBackup="false"; these rules are defence in depth.)
 -->
